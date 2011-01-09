@@ -282,12 +282,6 @@ main (int argc, char **argv)
     osd = g_object_new (OSM_TYPE_GPS_MAP_OSD,
                         "show-scale",TRUE,
                         "show-coordinates",TRUE,
-                        "show-crosshair",TRUE,
-                        //"show-dpad",TRUE,
-                        //"show-zoom",TRUE,
-                        //"show-gps-in-dpad",TRUE,
-                        //"show-gps-in-zoom",FALSE,
-                        //"dpad-radius", 30,
                         NULL);
     osm_gps_map_layer_add(OSM_GPS_MAP(map), osd);
     g_object_unref(G_OBJECT(osd));
@@ -324,6 +318,12 @@ main (int argc, char **argv)
     OsmGpsMapTrack *gpstrack = osm_gps_map_gps_get_track (map);
     g_object_get (gpstrack, "line-width", &lw, "alpha", &a, NULL);
     osm_gps_map_track_get_color(gpstrack, &c);
+    
+    // test star image, right in the middle
+    osm_gps_map_image_add(map, 55, -4, g_star_image);
+    // centre on UK, because I'm UK-centric
+    osm_gps_map_set_center_and_zoom(map, 55, -4, 6);
+    
     gtk_adjustment_set_value (
                 GTK_ADJUSTMENT(gtk_builder_get_object(builder, "gps_width_adjustment")),
                 lw);
