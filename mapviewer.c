@@ -22,6 +22,7 @@
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
+#include <fap.h>
 
 #include "osm-gps-map.h"
 
@@ -233,6 +234,9 @@ main (int argc, char **argv)
     GError *error = NULL;
     GOptionContext *context;
 
+    // initialise APRS parser
+    fap_init();
+
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
@@ -269,8 +273,9 @@ main (int argc, char **argv)
     if (opt_debug)
         gdk_window_set_debug_updates(TRUE);
 
-    g_debug("Map Cache Dir: %s", cachedir);
-    g_debug("Map Provider: %s (%d)", osm_gps_map_source_get_friendly_name(opt_map_provider), opt_map_provider);
+
+    //g_debug("Map Cache Dir: %s", cachedir);
+    //g_debug("Map Provider: %s (%d)", osm_gps_map_source_get_friendly_name(opt_map_provider), opt_map_provider);
 
     map = g_object_new (OSM_TYPE_GPS_MAP,
                         "map-source",opt_map_provider,
@@ -319,8 +324,46 @@ main (int argc, char **argv)
     g_object_get (gpstrack, "line-width", &lw, "alpha", &a, NULL);
     osm_gps_map_track_get_color(gpstrack, &c);
     
+//****************************************************************** 
+// test libfap
+
+	fap_packet_t *packet;
+	int i;
+
+	char *pbuf[] = {
+	 "2M0OVV>UV0PQR,MB7UD*,qAR,GM7GDE-12:`zGNlH\"j/]\"4$}=",
+	 "MB7UC>APN982,WIDE2-2,qAR,G3PWJ-3:$ULTW00A80084015B000027B6000594F00001----0008054100000070",
+	 "MB7UIK>APU25N,TCPIP*,qAC,AHUBSWE2:<IGATE,MSG_CNT=4137,LOC_CNT=1",
+	 "EI2FHP>APZ19,WIDE2-1,qAR,EI3RCW-2:!5202.37NS00737.67W#PHG3660/W3, SEARG APRS Digi      Co. Waterford",
+	 "G4ZJH-2>APU25N,WIDE5-5,qAR,G8ZQA:;TRAFFIC  *092222z5206.15N\00135.20E?35 In 10 Minutes",
+	};
+	for(i=0; i<5; i++) {
+	packet = fap_parseaprs(pbuf[i], strlen(pbuf[i]),0);
+
+        if ( packet->error_code )
+        {
+                printf("Failed to parse packet (%s): %s\n", pbuf[i], fap_explain_error(*packet->error_code));
+        }
+        else if ( packet->src_callsign )
+        {
+                printf("Got packet from %s.\n", packet->src_callsign);
+                if (packet->latitude) {
+                printf("%f %f\n", *(packet->latitude), *(packet->longitude));
+                osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+                }
+        }
+        
+        printf("packet is %x\n", packet);
+        fap_free(packet);
+        
+        }
+        
+
+	
+
+//******************************************************************
     // test star image, right in the middle
-    osm_gps_map_image_add(map, 55, -4, g_star_image);
+    //osm_gps_map_image_add(map, 55, -4, g_star_image);
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, 55, -4, 6);
     
@@ -390,8 +433,12 @@ main (int argc, char **argv)
 
     gtk_widget_show_all (widget);
 
-    g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
+    //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     gtk_main ();
 
+    fap_cleanup();
     return 0;
 }
+
+
+/* vim: set noexpandtab ai ts=4 sw=4 tw=4: */

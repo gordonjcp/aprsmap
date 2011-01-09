@@ -23,7 +23,7 @@ def configure(conf):
 
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
     conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
-#    conf.check_cfg(package = 'fftw3', uselib_store='FFTW', atleast_version = '3.2.2', args = '--cflags --libs')
+    conf.check_cfg(package = 'libfap', uselib_store='FAP', atleast_version = '0.9', args = '--cflags --libs')
     
 def build(bld):
     # 1. A simple program
@@ -33,6 +33,6 @@ def build(bld):
         #source = ('audio_jack.c filter.c gui.c lysdr.c sdr.c waterfall/waterfall.c'),
         #include = ['.', './waterfall',],
         target = 'aprsmap',
-        uselib = "GTK OSMGPSMAP",
+        uselib = "GTK OSMGPSMAP FAP",
         includes = '. /usr/include')
 
