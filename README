@@ -1,0 +1,9 @@
+10/1/2010
+This is a hack on the osm-gps-map example viewer.
+
+At the moment, all it does is read some pre-captured APRS packets, parse them for lat/long, and
+plop a star on the map at the appropriate place.
+
+It requires osm-gps-map libraries, and libfap libraries.  If you're using Arch Linux, you can install
+both of these from AUR.
+
