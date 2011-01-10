@@ -5,7 +5,7 @@
 
 #include <sys/socket.h>
 
-static int sockfd, newsockfd
+static int sockfd, newsockfd;
 
 int aprsis_connect(char *host, int port) {
 
