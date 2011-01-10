@@ -15,18 +15,14 @@ def configure(conf):
     conf.check_tool('compiler_cc')
     conf.check(header_name='stdlib.h')
     conf.check(header_name='math.h')
-    
-    #conf.env.CCFLAGS = ['-O0', '-g3']
-    #conf.env.CCFLAGS +=  ['-DG_DISABLE_SINGLE_INCLUDES','-DGDK_PIXBUF_DISABLE_SINGLE_INCLUDES', '-DGTK_DISABLE_SINGLE_INCLUDES']
-    #conf.env.CCFLAGS +=  ["-DG_DISABLE_DEPRECATED -DGDK_PIXBUF_DISABLE_DEPRECATED -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED"]
-    #conf.env.CCFLAGS += ["-DGSEAL_ENABLE"]
+
 
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
     conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
-    conf.check_cfg(package = 'libfap', uselib_store='FAP', atleast_version = '0.9', args = '--cflags --libs')
-    
+    #conf.check_cc(lib='osmgpsmap', uselib_store='OSMGPSMAP')    
+    conf.check_cc(lib='fap', uselib_store='FAP')
 def build(bld):
-    # 1. A simple program
+    # aprsmap
     bld(
         features = 'cc cprogram',
         source = bld.path.ant_glob('**/*.c'),
