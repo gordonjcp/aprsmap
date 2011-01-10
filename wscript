@@ -16,7 +16,7 @@ def configure(conf):
     conf.check(header_name='stdlib.h')
     conf.check(header_name='math.h')
 
-
+    conf.env.CCFLAGS = ['-O0', '-g3']
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
     conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
     #conf.check_cc(lib='osmgpsmap', uselib_store='OSMGPSMAP')    

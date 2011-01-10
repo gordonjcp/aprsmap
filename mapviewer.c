@@ -220,6 +220,8 @@ usage (GOptionContext *context)
     }
 }
 
+int aprsis_connect(char *host, int port);
+
 int
 main (int argc, char **argv)
 {
@@ -233,6 +235,8 @@ main (int argc, char **argv)
     char *cachedir, *cachebasedir;
     GError *error = NULL;
     GOptionContext *context;
+
+	int sockfd = aprsis_connect(NULL, 10152);
 
     // initialise APRS parser
     fap_init();
@@ -436,7 +440,9 @@ main (int argc, char **argv)
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     gtk_main ();
 
+
     fap_cleanup();
+    close(sockfd);
     return 0;
 }
 
