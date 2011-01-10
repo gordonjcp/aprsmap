@@ -58,8 +58,13 @@ int aprsis_connect() {
 			res = res->ai_next;
 		}
 	} while (err);
+	
+	return sockfd;
+	/*
+	// crappy test code
 	    char buf[256];
 	    int n;
+
 
 	sprintf(buf, "user mm0yeq pass -1 vers aprsmap 0.0 filter r/55/-4/600\n");
 	write(sockfd, buf, 256);
@@ -70,7 +75,9 @@ int aprsis_connect() {
       error("ERROR reading from socket");
     printf("Echo from server: %s", buf);
 	}
+	*/
 }
+
 
 
 
