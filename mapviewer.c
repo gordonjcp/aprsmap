@@ -18,13 +18,18 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <fap.h>
 
-#include "osm-gps-map.h"
+#include <fap.h>
+#include <osm-gps-map.h>
+
+#include "aprsis.h"
+
+OsmGpsMap *map;
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -44,6 +49,41 @@ static GOptionEntry entries[] =
 static GdkPixbuf *g_star_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
+
+gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
+	GIOStatus ret;
+	GError *err = NULL;
+	gchar *msg;
+	gsize len;
+	fap_packet_t *packet;
+	
+	if (condition & G_IO_HUP)
+		g_error ("Read end of pipe died!\n");
+
+	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
+	if (ret == G_IO_STATUS_ERROR)
+	g_error ("Error reading: %s\n", err->message);
+
+	printf ("Read %u bytes: %s\n", len, msg);
+
+	packet = fap_parseaprs(msg, strlen(msg), 0);
+	if (packet->error_code) {
+		printf("couldn't decode that...\n");
+		printf("%s", fap_explain_error(*packet->error_code));
+	} else if (packet->src_callsign) {
+	
+	
+                printf("Got packet from %s, at %f,%f.\n", packet->src_callsign,(float *)packet->latitude, packet->longitude);
+	}
+	if (packet->latitude) {
+                printf("%f %f\n", *(packet->latitude), *(packet->longitude));
+                osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+    }
+	fap_free(packet);
+
+	g_free (msg);
+	return TRUE;
+}
 static gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
@@ -220,21 +260,20 @@ usage (GOptionContext *context)
     }
 }
 
-int aprsis_connect(char *host, int port);
-
 int
 main (int argc, char **argv)
 {
     GtkBuilder *builder;
     GtkWidget *widget;
     GtkAccelGroup *ag;
-    OsmGpsMap *map;
+    //OsmGpsMap *map;
     OsmGpsMapLayer *osd;
     OsmGpsMapTrack *rightclicktrack;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
     GError *error = NULL;
     GOptionContext *context;
+	GIOChannel *gio_read;
 
 	int sockfd = aprsis_connect(NULL, 10152);
 
@@ -243,6 +282,13 @@ main (int argc, char **argv)
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
+
+	sockfd = aprsis_connect();
+	aprsis_login(sockfd);
+
+    gio_read = g_io_channel_unix_new (sockfd);
+    if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
+        g_error ("Cannot add watch on GIOChannel!\n");
 
     context = g_option_context_new ("- Map browser");
     g_option_context_set_help_enabled(context, FALSE);
@@ -278,8 +324,8 @@ main (int argc, char **argv)
         gdk_window_set_debug_updates(TRUE);
 
 
-    //g_debug("Map Cache Dir: %s", cachedir);
-    //g_debug("Map Provider: %s (%d)", osm_gps_map_source_get_friendly_name(opt_map_provider), opt_map_provider);
+    g_debug("Map Cache Dir: %s", cachedir);
+    g_debug("Map Provider: %s (%d)", osm_gps_map_source_get_friendly_name(opt_map_provider), opt_map_provider);
 
     map = g_object_new (OSM_TYPE_GPS_MAP,
                         "map-source",opt_map_provider,
@@ -330,7 +376,7 @@ main (int argc, char **argv)
     
 //****************************************************************** 
 // test libfap
-
+/*
 	fap_packet_t *packet;
 	int i;
 
@@ -363,7 +409,7 @@ main (int argc, char **argv)
         }
         
 
-	
+	*/
 
 //******************************************************************
     // test star image, right in the middle

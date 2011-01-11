@@ -4,18 +4,14 @@
 // GPL V3 applies
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <gtk/gtk.h>
-#include <sys/types.h> 
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <string.h>
 #include <netdb.h> 
 #include <errno.h>
 
 
 static int sockfd;
-
+int aprsis_login(int sockfd);
 int aprsis_connect() {
 	struct addrinfo server;
 	// FIXME grim hardcoded values
@@ -31,12 +27,13 @@ int aprsis_connect() {
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
 
 	// get a list of addresses
 	err = getaddrinfo(host, port, NULL, &res);
 	if (err != 0)   {
 		printf("error in getaddrinfo: %s\n", gai_strerror(err));
-		return EXIT_FAILURE;
+		return 1;
 	}
 
 	// loop down the list, and try to connect
@@ -65,23 +62,35 @@ int aprsis_connect() {
 	    char buf[256];
 	    int n;
 
+	aprsis_login(sockfd);
 
-	sprintf(buf, "user mm0yeq pass -1 vers aprsmap 0.0 filter r/55/-4/600\n");
-	write(sockfd, buf, 256);
 	while(1) {
-	
+		memset(&buf, 0, 256);
 	  n = read(sockfd, buf, 256);
     if (n < 0) 
       error("ERROR reading from socket");
-    printf("Echo from server: %s", buf);
+    printf("%s", buf);
 	}
-	*/
+*/
 }
 
 int aprsis_login(int sockfd) {
-
+	// wait for prompt, send filter message
+	char buf[256];
+	int n;
+	
+	n = read(sockfd, buf, 256);
+	if (n<0) {
+		error("couldn't read from socket");
+	}
+	// FIXME crappy hardcoded string
+	sprintf(buf, "user aprsmap pass -1 vers aprsmap 0.0 filter r/55/-4/600\n");   // so wrong
+	write(sockfd, buf, strlen(buf));
+	return 0;
 }
 
-
+void aprsis_close(int sockfd) {
+	close(sockfd);
+}
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
