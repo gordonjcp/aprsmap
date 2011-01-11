@@ -5,7 +5,7 @@ At the moment, all it does is read some pre-captured APRS packets, parse them fo
 plop a star on the map at the appropriate place.
 
 It requires osm-gps-map libraries, and libfap libraries.  If you're using Arch Linux, you can install
-both of these from AUR.  Ubuntu users may need to install libsoup-dev.
+both of these from AUR.  Ubuntu users may need to install libsoup2.4-dev due to a packaging bug.
 
 aprsmap uses waf for building.  To build:
 
