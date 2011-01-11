@@ -71,13 +71,13 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 		printf("couldn't decode that...\n");
 		printf("%s", fap_explain_error(*packet->error_code));
 	} else if (packet->src_callsign) {
-	
-	
-                printf("Got packet from %s, at %f,%f.\n", packet->src_callsign,(float *)packet->latitude, packet->longitude);
+                printf("Got packet from %s\n", packet->src_callsign);
 	}
 	if (packet->latitude) {
-                printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-                osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
+		printf("Symbol code: %c%c\n", packet->symbol_table,packet->symbol_code);
+		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+
     }
 	fap_free(packet);
 
@@ -375,46 +375,6 @@ main (int argc, char **argv)
     g_object_get (gpstrack, "line-width", &lw, "alpha", &a, NULL);
     osm_gps_map_track_get_color(gpstrack, &c);
     
-//****************************************************************** 
-// test libfap
-/*
-	fap_packet_t *packet;
-	int i;
-
-	char *pbuf[] = {
-	 "2M0OVV>UV0PQR,MB7UD*,qAR,GM7GDE-12:`zGNlH\"j/]\"4$}=",
-	 "MM0YEQ-9>APAND1,TCPIP*,qAU,jFindU-JS:!5557.68N\\00407.35Wu",
-	 "MM0YEQ>APX198,WIDE2-2,qAR,MM1PTT:=5557.3 N/00408.1 W-XASTIR-Linux",
-	 "EI2FHP>APZ19,WIDE2-1,qAR,EI3RCW-2:!5202.37NS00737.67W#PHG3660/W3, SEARG APRS Digi      Co. Waterford",
-	 "G4ZJH-2>APU25N,WIDE5-5,qAR,G8ZQA:;TRAFFIC  *092222z5206.15N\\00135.20E?35 In 10 Minutes",
-	};
-	for(i=0; i<5; i++) {
-	packet = fap_parseaprs(pbuf[i], strlen(pbuf[i]),0);
-
-        if ( packet->error_code )
-        {
-                printf("Failed to parse packet (%s): %s\n", pbuf[i], fap_explain_error(*packet->error_code));
-        }
-        else if ( packet->src_callsign )
-        {
-                printf("Got packet from %s.\n", packet->src_callsign);
-                if (packet->latitude) {
-                printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-                osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-                }
-        }
-        
-        printf("packet is %x\n", packet);
-        fap_free(packet);
-        
-        }
-        
-
-	*/
-
-//******************************************************************
-    // test star image, right in the middle
-    //osm_gps_map_image_add(map, 55, -4, g_star_image);
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, 55, -4, 6);
     
