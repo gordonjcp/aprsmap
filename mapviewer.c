@@ -287,6 +287,7 @@ main (int argc, char **argv)
 	aprsis_login(sockfd);
 
     gio_read = g_io_channel_unix_new (sockfd);
+    g_io_channel_set_encoding(gio_read, NULL, &error);
     if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
         g_error ("Cannot add watch on GIOChannel!\n");
 
