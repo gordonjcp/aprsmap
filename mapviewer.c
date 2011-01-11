@@ -54,7 +54,10 @@ static OsmGpsMapImage *g_last_image = NULL;
 
 
 void put_image(OsmGpsMap *map, double longitude, double latitude, char table, char code) {
-	//GdkPixbuf symbol = gdk_pixbuf_new(
+	// plop an ARPS symbol onto the map
+	// in the .pngs for FindU, the tables are 16x6 symbols
+
+//	GdkPixmap *symbol = Gdk
 
 }
 
