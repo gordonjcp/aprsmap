@@ -47,6 +47,8 @@ static GOptionEntry entries[] =
 };
 
 static GdkPixbuf *g_star_image = NULL;
+static GdkPixbuf *g_symbol1_image = NULL;
+static GdkPixbuf *g_symbol2_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
 
@@ -358,6 +360,8 @@ main (int argc, char **argv)
 
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
+    g_symbol1_image = gdk_pixbuf_new_from_file("allicons.png");
+    g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png");
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "mapviewer.ui", &error);
