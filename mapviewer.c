@@ -31,8 +31,10 @@
 
 OsmGpsMap *map;
 
-G_MODULE_EXPORT void 
-settings_popup (GtkButton *, GtkWidget *);
+GtkWidget *popup;
+
+float homelat = 55.0;
+float homelon = -4.0;
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -183,15 +185,21 @@ static gboolean
 on_home_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    osm_gps_map_set_center_and_zoom(map,55,-4,5);
+    osm_gps_map_set_center_and_zoom(map,homelat,homelon,5);
     return FALSE;
 }
-G_MODULE_EXPORT void 
-settings_popup (GtkButton *settings_button, GtkWidget *setPop)
+static gboolean
+on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
 {
-	    gtk_window_present( GTK_WINDOW( setPop ) );
+	gtk_window_present( GTK_WINDOW( popup ) );
+	return FALSE;
 }
-
+static gboolean
+on_properties_hide_event (GtkWidget *widget, gpointer user_data)
+{
+	gtk_widget_hide(	GTK_WIDGET( popup ) );
+	return FALSE;
+}
 static gboolean
 on_cache_clicked_event (GtkWidget *widget, gpointer user_data)
 {
@@ -283,7 +291,8 @@ int
 main (int argc, char **argv)
 {
     GtkBuilder *builder;
-    GtkWidget *widget, *settings;
+    GtkWidget *widget;
+	
     GtkAccelGroup *ag;
     //OsmGpsMap *map;
     OsmGpsMapLayer *osd;
@@ -368,7 +377,7 @@ main (int argc, char **argv)
     g_free(cachedir);
     g_free(cachebasedir);
 
-    //Enable keyboard navigation
+    //Enable keyboard   navigation
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_FULLSCREEN, GDK_F11);
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_UP, GDK_Up);
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_DOWN, GDK_Down);
@@ -398,7 +407,7 @@ main (int argc, char **argv)
     osm_gps_map_track_get_color(gpstrack, &c);
     
     // centre on UK, because I'm UK-centric
-    osm_gps_map_set_center_and_zoom(map, 55, -4, 5);
+    osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
     
     gtk_adjustment_set_value (
                 GTK_ADJUSTMENT(gtk_builder_get_object(builder, "gps_width_adjustment")),
@@ -426,9 +435,14 @@ main (int argc, char **argv)
     g_signal_connect (
                 gtk_builder_get_object(builder, "home_button"), "clicked",
                 G_CALLBACK (on_home_clicked_event), (gpointer) map);
-/*	g_signal_connect (
+	//Show Properties Windows
+	g_signal_connect (
 				gtk_builder_get_object(builder, "settings_button"), "clicked",
-				G_CALLBACK (on_settings_clicked_event), (gpointer) map); */
+				G_CALLBACK (on_properties_clicked_event), (gpointer) map);
+	//Hide Properties Window
+	g_signal_connect (
+				gtk_builder_get_object(builder, "closePrefs"), "clicked",
+				G_CALLBACK (on_properties_hide_event), (gpointer) map);
     g_signal_connect (
                 gtk_builder_get_object(builder, "cache_button"), "clicked",
                 G_CALLBACK (on_cache_clicked_event), (gpointer) map);
@@ -459,10 +473,11 @@ main (int argc, char **argv)
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
 
 		//pulls popup data from mapviewer.ui
-	settings = GTK_WIDGET(gtk_builder_get_object(builder, "settings_popup"));
+
+	popup = GTK_WIDGET(gtk_builder_get_object(builder, "proppop"));
 
 	//connect mapviewer.ui values to popup window
-	gtk_builder_connect_signals(builder, settings);
+	gtk_builder_connect_signals(builder, popup);
 
     //Setup accelerators.
     ag = gtk_accel_group_new();
@@ -482,8 +497,7 @@ main (int argc, char **argv)
 
     fap_cleanup();
     close(sockfd);
-    return 0;
+    return(0);
 }
-
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
