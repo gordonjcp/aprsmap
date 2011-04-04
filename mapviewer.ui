@@ -3,6 +3,7 @@
   <requires lib="gtk+" version="2.14"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window1">
+  <signal name="destroy" handler="gtk_main_quit"/>
     <property name="default_width">800</property>
     <property name="default_height">600</property>
     <child>
@@ -67,6 +68,19 @@
                     <property name="position">2</property>
                   </packing>
                 </child>
+		<child>
+		<object class="GtkButton" id="settings_button">
+                    <property name="label">Settings</property>
+		    <property name="visible">True</property>
+        	    <property name="can_focus">True</property>
+        	    <property name="receives_default">True</property>
+       		    <property name="use_stock">True</property>
+         	    <signal name="clicked" handler="settings_popup"/>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                  </packing>
+		</child>
                 <child>
                   <object class="GtkToggleButton" id="cache_button">
                     <property name="label" translatable="yes">Cache</property>
@@ -75,7 +89,7 @@
                     <property name="receives_default">True</property>
                   </object>
                   <packing>
-                    <property name="position">3</property>
+                    <property name="position">4</property>
                   </packing>
                 </child>
               </object>
@@ -341,6 +355,16 @@
             </child>
           </object>
         </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkWindow" id="settings_popup">
+    <property name="title" translatable="yes">Settings</property>
+    <signal name="delete_event" handler="gtk_widget_hide_on_delete"/>
+    <child>
+      <object class="GtkLabel" id="label">
+        <property name="visible">True</property>
+        <property name="label" translatable="yes">This pop-up is safe.</property>
       </object>
     </child>
   </object>

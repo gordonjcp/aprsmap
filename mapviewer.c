@@ -31,6 +31,9 @@
 
 OsmGpsMap *map;
 
+G_MODULE_EXPORT void 
+settings_popup (GtkButton *, GtkWidget *);
+
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
 static gboolean opt_no_cache = FALSE;
@@ -180,8 +183,13 @@ static gboolean
 on_home_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    osm_gps_map_set_center_and_zoom(map, -43.5326,172.6362,12);
+    osm_gps_map_set_center_and_zoom(map,55,-4,5);
     return FALSE;
+}
+G_MODULE_EXPORT void 
+settings_popup (GtkButton *settings_button, GtkWidget *setPop)
+{
+	    gtk_window_present( GTK_WINDOW( setPop ) );
 }
 
 static gboolean
@@ -275,7 +283,7 @@ int
 main (int argc, char **argv)
 {
     GtkBuilder *builder;
-    GtkWidget *widget;
+    GtkWidget *widget, *settings;
     GtkAccelGroup *ag;
     //OsmGpsMap *map;
     OsmGpsMapLayer *osd;
@@ -380,6 +388,7 @@ main (int argc, char **argv)
     gtk_box_pack_start (
                 GTK_BOX(gtk_builder_get_object(builder, "map_box")),
                 GTK_WIDGET(map), TRUE, TRUE, 0);
+	
 
     //Init values
     float lw,a;
@@ -389,7 +398,7 @@ main (int argc, char **argv)
     osm_gps_map_track_get_color(gpstrack, &c);
     
     // centre on UK, because I'm UK-centric
-    osm_gps_map_set_center_and_zoom(map, 55, -4, 6);
+    osm_gps_map_set_center_and_zoom(map, 55, -4, 5);
     
     gtk_adjustment_set_value (
                 GTK_ADJUSTMENT(gtk_builder_get_object(builder, "gps_width_adjustment")),
@@ -417,6 +426,9 @@ main (int argc, char **argv)
     g_signal_connect (
                 gtk_builder_get_object(builder, "home_button"), "clicked",
                 G_CALLBACK (on_home_clicked_event), (gpointer) map);
+/*	g_signal_connect (
+				gtk_builder_get_object(builder, "settings_button"), "clicked",
+				G_CALLBACK (on_settings_clicked_event), (gpointer) map); */
     g_signal_connect (
                 gtk_builder_get_object(builder, "cache_button"), "clicked",
                 G_CALLBACK (on_cache_clicked_event), (gpointer) map);
@@ -445,8 +457,13 @@ main (int argc, char **argv)
                 (gpointer) gtk_builder_get_object(builder, "cache_label"));
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
-    g_signal_connect (widget, "destroy",
-                      G_CALLBACK (on_close), (gpointer) map);
+
+		//pulls popup data from mapviewer.ui
+	settings = GTK_WIDGET(gtk_builder_get_object(builder, "settings_popup"));
+
+	//connect mapviewer.ui values to popup window
+	gtk_builder_connect_signals(builder, settings);
+
     //Setup accelerators.
     ag = gtk_accel_group_new();
     gtk_accel_group_connect(ag, GDK_w, GDK_CONTROL_MASK, GTK_ACCEL_MASK,
@@ -455,8 +472,10 @@ main (int argc, char **argv)
                     g_cclosure_new(gtk_main_quit, NULL, NULL));
     gtk_window_add_accel_group(GTK_WINDOW(widget), ag);
 
-    gtk_widget_show_all (widget);
+	g_object_unref( G_OBJECT( builder ) );
 
+    gtk_widget_show_all (widget);
+	
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     gtk_main ();
 
