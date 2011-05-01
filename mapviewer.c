@@ -81,7 +81,7 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	if (ret == G_IO_STATUS_ERROR)
 	g_error ("Error reading: %s\n", err->message);
 
-	printf ("Read %u bytes: %s\n", len, msg);
+	printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
@@ -94,9 +94,18 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	if (packet->latitude) {
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
 		printf("Symbol code: %c%c\n", packet->symbol_table,packet->symbol_code);
-		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+		if (packet->course) {
+		    printf("Course: %d\n", *(packet->course));
+		    printf("Speed: %dkm/h\n", *(packet->speed));
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
+		} else {
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+		}
 
-    }
+    } else {
+		printf("has no position information\n");
+	}
+
 	fap_free(packet);
 
 	g_free (msg);
@@ -388,8 +397,8 @@ main (int argc, char **argv)
 
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
-    g_symbol1_image = gdk_pixbuf_new_from_file("allicons.png", &error);
-    g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
+    g_symbol1_image = gdk_pixbuf_new_from_file("campervan.png", &error);
+    //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "mapviewer.ui", &error);
