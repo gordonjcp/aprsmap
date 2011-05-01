@@ -72,6 +72,7 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	gchar *msg;
 	gsize len;
 	fap_packet_t *packet;
+	char errmsg[256]; // ugh
 	
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");
@@ -85,7 +86,8 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
 		printf("couldn't decode that...\n");
-		printf("%s", fap_explain_error(*packet->error_code));
+		fap_explain_error(*packet->error_code, errmsg);
+		printf("%s", errmsg);
 	} else if (packet->src_callsign) {
                 printf("Got packet from %s\n", packet->src_callsign);
 	}
