@@ -96,7 +96,7 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 		printf("Symbol code: %c%c\n", packet->symbol_table,packet->symbol_code);
 		if (packet->course) {
 		    printf("Course: %d\n", *(packet->course));
-		    printf("Speed: %dkm/h\n", *(packet->speed));
+		    printf("Speed: %fkm/h\n", *(packet->speed));
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
 		} else {
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
@@ -119,6 +119,7 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
     OsmGpsMap *map = OSM_GPS_MAP(widget);
     OsmGpsMapTrack *othertrack = OSM_GPS_MAP_TRACK(user_data);
 
+/*
     if (event->type == GDK_3BUTTON_PRESS) {
         if (event->button == 1) {
             if (g_last_image)
@@ -142,7 +143,9 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
             osm_gps_map_track_add_point(othertrack, &coord);
         }
     }
-
+*/
+	// middle click adds a star, don't really need this either
+	/*
     if (event->type == GDK_BUTTON_PRESS) {
         if (event->button == 2) {
         osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
@@ -154,6 +157,7 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
                                     g_star_image);
         }
     }
+    */
     return FALSE;
 }
 

@@ -18,16 +18,13 @@ def configure(conf):
 
     conf.env.CCFLAGS = ['-O0', '-g3']
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
-    conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
-    #conf.check_cc(lib='osmgpsmap', uselib_store='OSMGPSMAP')    
-    conf.check_cc(lib='fap', uselib_store='FAP')
+    conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.3', args = '--cflags --libs')
+    conf.check_cfg(package="libfap", uselib_store="FAP", atleast_version = '1.1', args = '--cflags --libs')
 def build(bld):
     # aprsmap
     bld(
         features = 'cc cprogram',
         source = bld.path.ant_glob('**/*.c'),
-        #source = ('audio_jack.c filter.c gui.c lysdr.c sdr.c waterfall/waterfall.c'),
-        #include = ['.', './waterfall',],
         target = 'aprsmap',
         uselib = "GTK OSMGPSMAP FAP",
         includes = '. /usr/include')
