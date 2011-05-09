@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <interface>
-  <requires lib="gtk+" version="2.14"/>
+  <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy project-wide -->
   <object class="GtkWindow" id="window1">
     <property name="default_width">800</property>
@@ -92,7 +92,8 @@
     </child>
   </object>
   <object class="GtkWindow" id="proppop">
-    <property name="title" translatable="yes">Properties</property>
+    <property name="title" translatable="yes">Preferences</property>
+    <property name="resizable">False</property>
     <signal name="delete_event" handler="gtk_widget_hide_on_delete"/>
     <child>
       <object class="GtkAlignment" id="alignment2">
@@ -139,7 +140,7 @@ Latitude</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry1">
+                              <object class="GtkEntry" id="declat">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">&#x25CF;</property>
@@ -167,7 +168,7 @@ Longitude</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry2">
+                              <object class="GtkEntry" id="declon">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">&#x25CF;</property>
@@ -258,7 +259,7 @@ Longitude</property>
               <object class="GtkHBox" id="hbox10">
                 <property name="visible">True</property>
                 <child>
-                  <object class="GtkButton" id="button1">
+                  <object class="GtkButton" id="okPrefs">
                     <property name="label">gtk-ok</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
