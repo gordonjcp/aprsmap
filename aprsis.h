@@ -1,4 +1,4 @@
-#define APRSIS_LOGIN "user %s pass %s vers aprsmap 0.0 filter r/%.0f/%.0f/%d\n"
+#define APRSIS_LOGIN "user %s pass %s vers aprsmap 0.0"
 
 typedef struct _aprsis_ctx {
     int sockfd;

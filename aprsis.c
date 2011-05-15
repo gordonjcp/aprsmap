@@ -96,8 +96,16 @@ int aprsis_login(aprsis_ctx *ctx) {
 		error("couldn't read from socket");
 	}
 	// FIXME crappy hardcoded string
-	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass, ctx->latitude, ctx->longitude, ctx->radius);
+	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass);
 	write(ctx->sockfd, buf, strlen(buf));
+
+	if (ctx->radius != 0) {
+		memset(buf, '\0', sizeof(buf));
+		snprintf(buf, sizeof(buf), " filter r/%.0f/%.0f/%d", ctx->latitude, ctx->longitude, ctx->radius);
+		write(ctx->sockfd, buf, strlen(buf));
+	}
+
+	write(ctx->sockfd, "\n", 1);
 	return 0;
 }
 
