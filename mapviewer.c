@@ -318,7 +318,7 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "10152", "aprsmap", "-1");
+	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "14580", "aprsmap", "-1");
 	aprsis_connect(ctx);
 
     // initialise APRS parser
@@ -327,6 +327,7 @@ main (int argc, char **argv)
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
+	aprsis_set_filter(ctx, 55.0, -4.0, 600);
 	aprsis_login(ctx);
 
     gio_read = g_io_channel_unix_new (ctx->sockfd);

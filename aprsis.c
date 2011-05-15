@@ -15,6 +15,7 @@
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
 
+	ctx->sockfd = -1;
 	ctx->host = strdup(host);
 	ctx->port = strdup(port);
 	ctx->user = strdup(user);
@@ -95,9 +96,23 @@ int aprsis_login(aprsis_ctx *ctx) {
 		error("couldn't read from socket");
 	}
 	// FIXME crappy hardcoded string
-	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass);   // so wrong
+	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass, ctx->latitude, ctx->longitude, ctx->radius);
 	write(ctx->sockfd, buf, strlen(buf));
 	return 0;
+}
+
+void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int radius) {
+
+	ctx->latitude = latitude;
+	ctx->longitude = longitude;
+	ctx->radius = radius;
+
+	if (ctx->sockfd != -1) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
+		printf("\nSending filter: %s\n", buf);
+		write(ctx->sockfd, buf, strlen(buf));
+	}
 }
 
 void aprsis_close(aprsis_ctx *ctx) {
