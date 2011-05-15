@@ -318,7 +318,8 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	int sockfd = aprsis_connect(NULL, 10152);
+	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "10152", "aprsmap", "-1");
+	aprsis_connect(ctx);
 
     // initialise APRS parser
     fap_init();
@@ -326,10 +327,9 @@ main (int argc, char **argv)
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
-	sockfd = aprsis_connect();
-	aprsis_login(sockfd);
+	aprsis_login(ctx);
 
-    gio_read = g_io_channel_unix_new (sockfd);
+    gio_read = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(gio_read, NULL, &error);
     if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
         g_error ("Cannot add watch on GIOChannel!\n");
@@ -511,7 +511,7 @@ main (int argc, char **argv)
 
 
     fap_cleanup();
-    close(sockfd);
+    aprsis_close(ctx);
     return(0);
 }
 

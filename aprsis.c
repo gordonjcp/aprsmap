@@ -4,19 +4,30 @@
 // GPL V3 applies
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/socket.h>
 #include <string.h>
 #include <netdb.h> 
 #include <errno.h>
 
+#include "aprsis.h"
 
-static int sockfd;
-int aprsis_login(int sockfd);
-int aprsis_connect() {
+aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
+	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
+
+	ctx->host = strdup(host);
+	ctx->port = strdup(port);
+	ctx->user = strdup(user);
+	ctx->pass = strdup(pass);
+
+	return ctx;
+}
+
+int aprsis_connect(aprsis_ctx *ctx) {
 	struct addrinfo server;
 	// FIXME grim hardcoded values
-	const char *host = "england.aprs2.net";
-	const char *port = "10152";
+	//const char *host = "england.aprs2.net";
+	//const char *port = "10152";
 	int err;
 
 	// somewhere to put the result of the lookup
@@ -30,7 +41,7 @@ int aprsis_connect() {
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// get a list of addresses
-	err = getaddrinfo(host, port, NULL, &res);
+	err = getaddrinfo(ctx->host, ctx->port, NULL, &res);
 	if (err != 0)   {
 		printf("error in getaddrinfo: %s\n", gai_strerror(err));
 		return 1;
@@ -48,15 +59,15 @@ int aprsis_connect() {
 		
 		// set up a socket, and attempt to connect
 		//sockfd = socket(AF_INET, SOCK_STREAM, 0);
-		sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		err = connect(sockfd, res->ai_addr, res->ai_addrlen);
+		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
 			printf("can't connect - %s\n",strerror(errno));
 			res = res->ai_next;
 		}
 	} while (err);
 	
-	return sockfd;
+	return 1;
 	/*
 	// crappy test code
 	    char buf[256];
@@ -74,23 +85,40 @@ int aprsis_connect() {
 */
 }
 
-int aprsis_login(int sockfd) {
+int aprsis_login(aprsis_ctx *ctx) {
 	// wait for prompt, send filter message
 	char buf[256];
 	int n;
 	
-	n = read(sockfd, buf, 256);
+	n = read(ctx->sockfd, buf, 256);
 	if (n<0) {
 		error("couldn't read from socket");
 	}
 	// FIXME crappy hardcoded string
-	sprintf(buf, "user aprsmap pass -1 vers aprsmap 0.0 filter r/55/-4/600\n");   // so wrong
-	write(sockfd, buf, strlen(buf));
+	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass);   // so wrong
+	write(ctx->sockfd, buf, strlen(buf));
 	return 0;
 }
 
-void aprsis_close(int sockfd) {
-	close(sockfd);
+void aprsis_close(aprsis_ctx *ctx) {
+	close(ctx->sockfd);
+	if (ctx->host != NULL) {
+		free(ctx->host);
+	}
+	
+	if (ctx->port != NULL) {
+		free(ctx->port);
+	}
+
+	if (ctx->user != NULL) {
+		free(ctx->user);
+	}
+	
+	if (ctx->pass != NULL) {
+		free(ctx->pass);
+	}
+
+	free(ctx);
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
