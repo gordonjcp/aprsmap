@@ -76,6 +76,8 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	gsize len;
 	fap_packet_t *packet;
 	char errmsg[256]; // ugh
+	char symb[3];
+	char wx[3] = "wx";
 	
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");
@@ -96,7 +98,14 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	}
 	if (packet->latitude) {
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-		printf("Symbol code: %c%c\n", packet->symbol_table,packet->symbol_code);
+		//Take symbol, fire it into char array and hopefully we can use symbols in
+		//identifying stations
+		snprintf(symb,sizeof(symb),"%c%c", packet->symbol_table,packet->symbol_code);
+		printf("Symbol Code: %s\n", symb);
+		//Compare it to the symbol I've defined for wx stations "/_"
+		if (strcmp (symb, wx) != 0) {
+		printf("WX Station");		
+		}
 		if (packet->course) {
 		    printf("Course: %d\n", *(packet->course));
 		    printf("Speed: %fkm/h\n", *(packet->speed));
@@ -224,7 +233,7 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
-static gboolean
+/* static gboolean
 on_cache_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     OsmGpsMap *map = OSM_GPS_MAP(user_data);
@@ -238,7 +247,7 @@ on_cache_clicked_event (GtkWidget *widget, gpointer user_data)
         osm_gps_map_download_cancel_all(map);
     }
     return FALSE;
-}
+} */
 
 static void
 on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
@@ -328,12 +337,8 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-<<<<<<< HEAD
-	//int sockfd = aprsis_connect(NULL, 10152);
-=======
 	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "14580", "aprsmap", "-1");
 	aprsis_connect(ctx);
->>>>>>> 8238fc177ddad99187212f16f853aea5e74afff0
 
     // initialise APRS parser
     fap_init();
@@ -341,13 +346,9 @@ main (int argc, char **argv)
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
-<<<<<<< HEAD
-	int sockfd = aprsis_connect();
-	aprsis_login(sockfd);
-=======
+
 	aprsis_set_filter(ctx, 55.0, -4.0, 600);
 	aprsis_login(ctx);
->>>>>>> 8238fc177ddad99187212f16f853aea5e74afff0
 
     gio_read = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(gio_read, NULL, &error);
@@ -401,8 +402,6 @@ main (int argc, char **argv)
     osd = g_object_new (OSM_TYPE_GPS_MAP_OSD,
                         "show-scale",TRUE,
                         "show-coordinates",TRUE,
-						"show-zoom",TRUE,
-						"show-gps-in-zoom",TRUE,
                         NULL);
     osm_gps_map_layer_add(OSM_GPS_MAP(map), osd);
     g_object_unref(G_OBJECT(osd));
@@ -472,6 +471,7 @@ main (int argc, char **argv)
     g_signal_connect (
                 gtk_builder_get_object(builder, "home_button"), "clicked",
                 G_CALLBACK (on_home_clicked_event), (gpointer) map);
+	
 	//Show Properties Windows
 	g_signal_connect (
 				gtk_builder_get_object(builder, "settings_button"), "clicked",
@@ -483,13 +483,13 @@ main (int argc, char **argv)
 	g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
 				G_CALLBACK (on_properties_ok_clicked), (gpointer) map);
-    g_signal_connect (
+    /*g_signal_connect (
                 gtk_builder_get_object(builder, "cache_button"), "clicked",
                 G_CALLBACK (on_cache_clicked_event), (gpointer) map);
-    /*g_signal_connect (
+    g_signal_connect (
                 gtk_builder_get_object(builder, "gps_alpha_adjustment"), "value-changed",
-                G_CALLBACK (on_gps_alpha_changed), (gpointer) map); */
-    /*g_signal_connect (
+                G_CALLBACK (on_gps_alpha_changed), (gpointer) map);
+    g_signal_connect (
                 gtk_builder_get_object(builder, "gps_width_adjustment"), "value-changed",
                 G_CALLBACK (on_gps_width_changed), (gpointer) map);*/
     g_signal_connect (
