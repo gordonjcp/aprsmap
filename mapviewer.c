@@ -109,8 +109,15 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
 		printf("WX Station");		
 		} else if (strcmp (symb, car) == 0) {
-		    printf("Course: %d\n", *(packet->course));
-		    printf("Speed: %fkm/h\n", *(packet->speed));
+
+			if (packet->course != NULL) {
+				printf("Course: %d\n", *(packet->course));
+			}
+
+			if (packet->speed != NULL) {
+				printf("Speed: %fkm/h\n", *(packet->speed));
+			}
+
 			printf("Mobile Rig");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
 		} else {
