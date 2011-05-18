@@ -15,7 +15,7 @@ int aprsis_login(int sockfd);
 int aprsis_connect() {
 	struct addrinfo server;
 	// FIXME grim hardcoded values
-	const char *host = "euro.aprs2.net";
+	const char *host = "england.aprs2.net";
 	const char *port = "10152";
 	int err;
 

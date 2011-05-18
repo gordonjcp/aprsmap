@@ -297,5 +297,18 @@ Longitude</property>
       <widget name="h"/>
     </widgets>
   </object>
-  <object class="GtkListStore" id="liststore1"/>
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <!-- column-name gchararray1 -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">euro.aprs2.net</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">england.aprs2.net</col>
+      </row>
+    </data>
+  </object>
 </interface>
