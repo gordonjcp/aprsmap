@@ -57,6 +57,7 @@ static GOptionEntry entries[] =
 static GdkPixbuf *g_star_image = NULL;
 static GdkPixbuf *g_symbol1_image = NULL;
 static GdkPixbuf *g_symbol2_image = NULL;
+static GdkPixbuf *g_wx_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
 
@@ -77,7 +78,8 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	fap_packet_t *packet;
 	char errmsg[256]; // ugh
 	char symb[3];
-	char wx[3] = "wx";
+	char wx[4] = "/_";
+	char car[4] = "/>";
 	
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");
@@ -103,12 +105,13 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 		snprintf(symb,sizeof(symb),"%c%c", packet->symbol_table,packet->symbol_code);
 		printf("Symbol Code: %s\n", symb);
 		//Compare it to the symbol I've defined for wx stations "/_"
-		if (strcmp (symb, wx) != 0) {
+		if (strcmp (symb, wx) == 0) {
+		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
 		printf("WX Station");		
-		}
-		if (packet->course) {
+		} else if (strcmp (symb, car) == 0) {
 		    printf("Course: %d\n", *(packet->course));
 		    printf("Speed: %fkm/h\n", *(packet->speed));
+			printf("Mobile Rig");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
 		} else {
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
@@ -423,6 +426,7 @@ main (int argc, char **argv)
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
     g_symbol1_image = gdk_pixbuf_new_from_file("campervan.png", &error);
+	g_wx_image = gdk_pixbuf_new_from_file("wx.gif", &error);
     //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
 
     builder = gtk_builder_new();
