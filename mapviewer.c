@@ -35,7 +35,6 @@ GtkWidget *popup;
 GtkEntry *latent;
 GtkEntry *lonent;
 
-
 double homelat = 55.0;
 double homelon = -4.0;
 
@@ -60,8 +59,6 @@ static GdkPixbuf *g_symbol2_image = NULL;
 static GdkPixbuf *g_wx_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
-//gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
-
 gboolean process_packet(gchar *msg) {
 
 	fap_packet_t *packet;
@@ -70,13 +67,7 @@ gboolean process_packet(gchar *msg) {
 	char wx[4] = "/_";
 	char car[4] = "/>";
 
-	printf("processing %s\n", msg);
-
-	//char pkt[256]="M0ADS>APU25N,TCPIP*,qAC,T2UK:@192338z5321.45N/00129.78W_216/000g000t051r000p000P000h77b10162PHG33604/Probe Enabled {UIV32}";
-
 	packet = fap_parseaprs(msg, strlen(msg), 0);
-	//packet = fap_parseaprs(pkt, strlen(pkt), 0);
-	
 	if (packet->error_code) {
 		printf("couldn't decode that...\n");
 		fap_explain_error(*packet->error_code, errmsg);
@@ -210,7 +201,6 @@ on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
 static void
 on_close (GtkWidget *widget, gpointer user_data)
 {
-    printf("closing\n");
     gtk_widget_destroy(widget);
     gtk_main_quit();
 }
@@ -398,6 +388,7 @@ main (int argc, char **argv)
     gtk_widget_show_all (widget);
 	
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
+    g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MESSAGE, g_log_default_handler, NULL);
     gtk_main ();
 
 

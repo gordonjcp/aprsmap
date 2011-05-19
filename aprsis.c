@@ -64,7 +64,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		if (err) {
 			printf("error in getnameinfo: %s\n", gai_strerror(err));
 		}
-		printf("trying hostname: %s\n", hostname);
+		g_message("trying hostname: %s\n", hostname);
 		
 		// set up a socket, and attempt to connect
 		//sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -75,7 +75,6 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			res = res->ai_next;
 		}
 	} while (err);
-	printf("-----------------------> err = %d\n", err);
 	
 	return 1;
 }
@@ -89,16 +88,16 @@ int aprsis_login(aprsis_ctx *ctx) {
 	if (n<0) {
 		error("couldn't read from socket");
 	}
-	//printf("got\t%s\n",buf); // FIXME make these debug messages
+	g_message("got\t%s",buf);
 
 	sprintf(buf, APRSIS_LOGIN"\n", ctx->user, ctx->pass);
-	//printf("sending\t%s\n", buf);
+	g_message("sending\t%s", buf);
 	write(ctx->sockfd, buf, strlen(buf));
 	n = read(ctx->sockfd, buf, 256);
 	if (n<0) {
 		error("couldn't read from socket");
 	}
-	//printf("got\t%s\n",buf);
+	g_message("got\t%s",buf);
 	
 	return 0;
 }
@@ -112,7 +111,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 	if (ctx->sockfd != -1) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
-		printf("\nSending filter: %s\n", buf);
+		g_message("Sending filter: %s", buf);
 		write(ctx->sockfd, buf, strlen(buf));
 	}
 }
@@ -122,7 +121,7 @@ void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
 	if (ctx->sockfd != -1) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter %s\n", filter);
-		printf("\nSending filter: %s\n", buf);
+		g_message("Sending filter: %s", buf);
 		write(ctx->sockfd, buf, strlen(buf));
 	}
 }
@@ -157,12 +156,11 @@ void aprsis_close(aprsis_ctx *ctx) {
 }
 
 static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
-	
+	// callback when GIOChannel tells us there's an APRS packet to be handled
 	GIOStatus ret;
 	GError *err = NULL;
 	gchar *msg;
 	gsize len;
-
 
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
@@ -187,10 +185,10 @@ static void *start_aprsis_thread(void *ptr) {
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
 	
-	printf("connecting...\n");
+	g_message("connecting to %s", ctx->host);
 	aprsis_connect(ctx);
 
-	printf("logging in...\n");
+	g_message("logging in...\n");
 	aprsis_login(ctx);
 	aprsis_set_filter(ctx, 55, -4, 600);
 	//aprsis_set_filter_string(ctx, "p/M/G/2");
