@@ -167,6 +167,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
 	}
 
+	g_free(msg);
 }
 
 
