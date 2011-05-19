@@ -129,6 +129,7 @@ void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
 
 
 void aprsis_close(aprsis_ctx *ctx) {
+
 	close(ctx->sockfd);
 	if (ctx->host != NULL) {
 		free(ctx->host);
@@ -145,8 +146,14 @@ void aprsis_close(aprsis_ctx *ctx) {
 	if (ctx->pass != NULL) {
 		free(ctx->pass);
 	}
-
 	free(ctx);
+	if (aprs1) {
+		g_source_remove(aprs1);
+	}
+	if (aprsis_io) {
+		g_io_channel_unref (aprsis_io);
+	}
+	
 }
 
 static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
@@ -155,7 +162,8 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	GError *err = NULL;
 	gchar *msg;
 	gsize len;
-	
+
+
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
 		
@@ -170,6 +178,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	}
 
 	g_free(msg);
+
 }
 
 

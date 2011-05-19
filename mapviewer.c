@@ -70,9 +70,13 @@ gboolean process_packet(gchar *msg) {
 	char wx[4] = "/_";
 	char car[4] = "/>";
 
+	printf("processing %s\n", msg);
 
+	//char pkt[256]="M0ADS>APU25N,TCPIP*,qAC,T2UK:@192338z5321.45N/00129.78W_216/000g000t051r000p000P000h77b10162PHG33604/Probe Enabled {UIV32}";
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
+	//packet = fap_parseaprs(pkt, strlen(pkt), 0);
+	
 	if (packet->error_code) {
 		printf("couldn't decode that...\n");
 		fap_explain_error(*packet->error_code, errmsg);
@@ -111,6 +115,7 @@ gboolean process_packet(gchar *msg) {
 	}
 
 	fap_free(packet);
+	
 	return TRUE;
 }
 static gboolean
@@ -205,6 +210,7 @@ on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
 static void
 on_close (GtkWidget *widget, gpointer user_data)
 {
+    printf("closing\n");
     gtk_widget_destroy(widget);
     gtk_main_quit();
 }
@@ -327,8 +333,6 @@ main (int argc, char **argv)
     gtk_box_pack_start (
                 GTK_BOX(gtk_builder_get_object(builder, "map_box")),
                 GTK_WIDGET(map), TRUE, TRUE, 0);
-	
-
   
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
@@ -363,6 +367,8 @@ main (int argc, char **argv)
                 (gpointer) gtk_builder_get_object(builder, "cache_label"));
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
+    g_signal_connect (widget, "destroy",
+                      G_CALLBACK (on_close), (gpointer) map);
 
 		//pulls popup data from mapviewer.ui
 
