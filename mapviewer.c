@@ -60,16 +60,6 @@ static GdkPixbuf *g_symbol2_image = NULL;
 static GdkPixbuf *g_wx_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
-
-
-void put_image(OsmGpsMap *map, double longitude, double latitude, char table, char code) {
-	// plop an ARPS symbol onto the map
-	// in the .pngs for FindU, the tables are 16x6 symbols
-
-//	GdkPixmap *symbol = Gdk
-
-}
-
 gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
 	GIOStatus ret;
 	GError *err = NULL;
@@ -139,47 +129,6 @@ on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_d
     OsmGpsMapPoint coord;
     float lat, lon;
     OsmGpsMap *map = OSM_GPS_MAP(widget);
-   //OsmGpsMapTrack *othertrack = OSM_GPS_MAP_TRACK(user_data);
-
-/*
-    if (event->type == GDK_3BUTTON_PRESS) {
-        if (event->button == 1) {
-            if (g_last_image)
-                osm_gps_map_image_remove (map, g_last_image);
-        }
-        if (event->button == 3) {
-            osm_gps_map_track_remove(map, othertrack);
-        }
-    }
-
-    if (event->type == GDK_2BUTTON_PRESS) {
-        osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
-        osm_gps_map_point_get_degrees(&coord, &lat, &lon);
-        if (event->button == 1) {
-            osm_gps_map_gps_add (map,
-                                 lat,
-                                 lon,
-                                 g_random_double_range(0,360));
-        }
-        if (event->button == 3) {
-            osm_gps_map_track_add_point(othertrack, &coord);
-        }
-    }
-*/
-	// middle click adds a star, don't really need this either
-	/*
-    if (event->type == GDK_BUTTON_PRESS) {
-        if (event->button == 2) {
-        osm_gps_map_convert_screen_to_geographic(map, event->x, event->y, &coord);
-        osm_gps_map_point_get_degrees(&coord, &lat, &lon);
-            g_last_image = osm_gps_map_image_add (
-                                    map,
-                                    lat,
-                                    lon,
-                                    g_star_image);
-        }
-    }
-    */
     return FALSE;
 }
 
@@ -187,12 +136,10 @@ static gboolean
 on_button_release_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
     float lat,lon;
-    //GtkEntry *entry = GTK_ENTRY(user_data);
     OsmGpsMap *map = OSM_GPS_MAP(widget);
 
     g_object_get(map, "latitude", &lat, "longitude", &lon, NULL);
     gchar *msg = g_strdup_printf("%f,%f",lat,lon);
-    //gtk_entry_set_text(entry, msg);
     g_free(msg);
 
     return FALSE;
@@ -243,21 +190,6 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
-/* static gboolean
-on_cache_clicked_event (GtkWidget *widget, gpointer user_data)
-{
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget))) {
-        int zoom,max_zoom;
-        OsmGpsMapPoint pt1, pt2;
-        osm_gps_map_get_bbox(map, &pt1, &pt2);
-        g_object_get(map, "zoom", &zoom, "max-zoom", &max_zoom, NULL);
-        osm_gps_map_download_maps(map, &pt1, &pt2, zoom, max_zoom);
-    } else {
-        osm_gps_map_download_cancel_all(map);
-    }
-    return FALSE;
-} */
 
 static void
 on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
@@ -271,23 +203,6 @@ on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data
     g_free(s);
 }
 
-/*static void
-on_gps_alpha_changed (GtkAdjustment *adjustment, gpointer user_data)
-{
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    OsmGpsMapTrack *track = osm_gps_map_gps_get_track (map);
-    float f = gtk_adjustment_get_value(adjustment);
-    g_object_set (track, "alpha", f, NULL);}
-
-static void
-on_gps_width_changed (GtkAdjustment *adjustment, gpointer user_data)
-{
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    OsmGpsMapTrack *track = osm_gps_map_gps_get_track (map);
-    float f = gtk_adjustment_get_value(adjustment);
-    g_object_set (track, "line-width", f, NULL);
-} */
-
 static void
 on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
 {
@@ -296,15 +211,6 @@ on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
     if (g_last_image)
         g_object_set (g_last_image, propname, f, NULL);
 }
-
-/*static void
-on_gps_color_changed (GtkColorButton *widget, gpointer user_data)
-{
-    GdkColor c;
-    OsmGpsMapTrack *track = OSM_GPS_MAP_TRACK(user_data);
-    gtk_color_button_get_color (widget, &c);
-    g_object_set(track, "color", &c, NULL);
-}*/
 
 static void
 on_close (GtkWidget *widget, gpointer user_data)
@@ -338,9 +244,7 @@ main (int argc, char **argv)
     GtkWidget *widget;
 	
     GtkAccelGroup *ag;
-    //OsmGpsMap *map;
     OsmGpsMapLayer *osd;
-    //OsmGpsMapTrack *rightclicktrack;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
     GError *error = NULL;
@@ -356,10 +260,11 @@ main (int argc, char **argv)
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
-
+	// log in to APRS-IS server
 	aprsis_set_filter(ctx, 55.0, -4.0, 600);
 	aprsis_login(ctx);
-
+	
+	// start reading APRS-IS packets
     gio_read = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(gio_read, NULL, &error);
     if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
@@ -416,10 +321,6 @@ main (int argc, char **argv)
     osm_gps_map_layer_add(OSM_GPS_MAP(map), osd);
     g_object_unref(G_OBJECT(osd));
 
-    //Add a second track for right clicks <- Debating whether this is required
-    //rightclicktrack = osm_gps_map_track_new();
-    //osm_gps_map_track_add(OSM_GPS_MAP(map), rightclicktrack);
-
     g_free(cachedir);
     g_free(cachebasedir);
 
@@ -446,31 +347,9 @@ main (int argc, char **argv)
                 GTK_WIDGET(map), TRUE, TRUE, 0);
 	
 
-    //Init values
-    float lw,a;
-    GdkColor c;
-    //OsmGpsMapTrack *gpstrack = osm_gps_map_gps_get_track (map);
-    //g_object_get (gpstrack, "line-width", &lw, "alpha", &a, NULL);
-    //osm_gps_map_track_get_color(gpstrack, &c);
-    
+  
     // centre on UK, because I'm UK-centric
     osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
-    
-    gtk_adjustment_set_value (
-                GTK_ADJUSTMENT(gtk_builder_get_object(builder, "gps_width_adjustment")),
-                lw);
-    gtk_adjustment_set_value (
-                GTK_ADJUSTMENT(gtk_builder_get_object(builder, "gps_alpha_adjustment")),
-                a);
-    gtk_adjustment_set_value (
-                GTK_ADJUSTMENT(gtk_builder_get_object(builder, "star_xalign_adjustment")),
-                0.5);
-    gtk_adjustment_set_value (
-                GTK_ADJUSTMENT(gtk_builder_get_object(builder, "star_yalign_adjustment")),
-                0.5);
-    gtk_color_button_set_color (
-                GTK_COLOR_BUTTON(gtk_builder_get_object(builder, "gps_colorbutton")),
-                &c);
 
     //Connect to signals
     g_signal_connect (
@@ -494,26 +373,6 @@ main (int argc, char **argv)
 	g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
 				G_CALLBACK (on_properties_ok_clicked), (gpointer) map);
-    /*g_signal_connect (
-                gtk_builder_get_object(builder, "cache_button"), "clicked",
-                G_CALLBACK (on_cache_clicked_event), (gpointer) map);
-    g_signal_connect (
-                gtk_builder_get_object(builder, "gps_alpha_adjustment"), "value-changed",
-                G_CALLBACK (on_gps_alpha_changed), (gpointer) map);
-    g_signal_connect (
-                gtk_builder_get_object(builder, "gps_width_adjustment"), "value-changed",
-                G_CALLBACK (on_gps_width_changed), (gpointer) map);*/
-    g_signal_connect (
-                gtk_builder_get_object(builder, "star_xalign_adjustment"), "value-changed",
-                G_CALLBACK (on_star_align_changed), (gpointer) "x-align");
-    g_signal_connect (
-                gtk_builder_get_object(builder, "star_yalign_adjustment"), "value-changed",
-                G_CALLBACK (on_star_align_changed), (gpointer) "y-align");
-  /*  g_signal_connect (
-                gtk_builder_get_object(builder, "gps_colorbutton"), "color-set",
-                G_CALLBACK (on_gps_color_changed), (gpointer) gpstrack);
-    g_signal_connect (G_OBJECT (map), "button-press-event",
-                G_CALLBACK (on_button_press_event), (gpointer) rightclicktrack); */
     g_signal_connect (G_OBJECT (map), "button-release-event",
                 G_CALLBACK (on_button_release_event),
                 (gpointer) gtk_builder_get_object(builder, "text_entry"));
