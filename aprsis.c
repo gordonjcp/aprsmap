@@ -3,14 +3,23 @@
 // Copyright 2011 Gordonjcp MM0YEQ
 // GPL V3 applies
 
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <glib.h>
+
 #include <sys/socket.h>
 #include <string.h>
 #include <netdb.h> 
 #include <errno.h>
 
 #include "aprsis.h"
+
+
+
+static gboolean reconnect;
+static guint aprs1;
+GIOChannel *aprsis_io;
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
@@ -26,9 +35,7 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 
 int aprsis_connect(aprsis_ctx *ctx) {
 	struct addrinfo server;
-	// FIXME grim hardcoded values
-	//const char *host = "england.aprs2.net";
-	//const char *port = "10152";
+
 	int err;
 
 	// somewhere to put the result of the lookup
@@ -67,23 +74,9 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			res = res->ai_next;
 		}
 	} while (err);
+	printf("-----------------------> err = %d\n", err);
 	
 	return 1;
-	/*
-	// crappy test code
-	    char buf[256];
-	    int n;
-
-	aprsis_login(sockfd);
-
-	while(1) {
-		memset(&buf, 0, 256);
-	  n = read(sockfd, buf, 256);
-    if (n < 0) 
-      error("ERROR reading from socket");
-    printf("%s", buf);
-	}
-*/
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
@@ -95,7 +88,7 @@ int aprsis_login(aprsis_ctx *ctx) {
 	if (n<0) {
 		error("couldn't read from socket");
 	}
-	// FIXME crappy hardcoded string
+
 	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass);
 	write(ctx->sockfd, buf, strlen(buf));
 
@@ -123,6 +116,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 	}
 }
 
+
 void aprsis_close(aprsis_ctx *ctx) {
 	close(ctx->sockfd);
 	if (ctx->host != NULL) {
@@ -142,6 +136,61 @@ void aprsis_close(aprsis_ctx *ctx) {
 	}
 
 	free(ctx);
+}
+
+static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
+	
+	GIOStatus ret;
+	GError *err = NULL;
+	gchar *msg;
+	gsize len;
+	
+	if (condition & G_IO_HUP)
+		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
+		
+	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
+	if (ret == G_IO_STATUS_ERROR)
+	g_error ("Error reading: %s\n", err->message);
+
+	printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);	
+
+}
+
+
+static void *start_aprsis_thread(void *ptr) {
+
+    GError *error = NULL;
+	aprsis_ctx *ctx = ptr;
+	
+	printf("connecting...\n");
+	aprsis_connect(ctx);
+
+	printf("logging in...\n");
+	aprsis_set_filter(ctx, 55, -4, 600);
+	aprsis_login(ctx);
+
+	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
+    g_io_channel_set_encoding(aprsis_io, NULL, &error);
+    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_HUP, aprsis_got_packet, NULL))
+        g_error ("Cannot add watch on GIOChannel!\n");
+	
+	return NULL;
+}
+
+void start_aprsis(aprsis_ctx *ctx) {
+	// prepare the APRS-IS connection thread
+	reconnect = FALSE;  // don't keep trying if we've already tried to start one
+	
+	// remove the IO channel and watch
+	if (aprs1) {
+		g_source_remove(aprs1);
+		aprs1=0;
+	}
+	if (aprsis_io) {
+		g_io_channel_unref (aprsis_io);
+		aprsis_io = NULL;
+	}
+	g_thread_create(&start_aprsis_thread, ctx, FALSE, NULL);
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */

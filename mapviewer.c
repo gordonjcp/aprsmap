@@ -252,24 +252,23 @@ main (int argc, char **argv)
 	GIOChannel *gio_read;
 
 	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "14580", "aprsmap", "-1");
-	aprsis_connect(ctx);
-
-    // initialise APRS parser
-    fap_init();
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
-	// log in to APRS-IS server
-	aprsis_set_filter(ctx, 55.0, -4.0, 600);
-	aprsis_login(ctx);
+    // initialise APRS parser
+    fap_init();
+
+	// connect to APRS_IS server
+	start_aprsis(ctx);
 	
+	/*
 	// start reading APRS-IS packets
     gio_read = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(gio_read, NULL, &error);
     if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
         g_error ("Cannot add watch on GIOChannel!\n");
-
+	*/
     context = g_option_context_new ("- Map browser");
     g_option_context_set_help_enabled(context, FALSE);
     g_option_context_add_main_entries (context, entries, NULL);
