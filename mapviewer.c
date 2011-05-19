@@ -261,14 +261,7 @@ main (int argc, char **argv)
 
 	// connect to APRS_IS server
 	start_aprsis(ctx);
-	
-	/*
-	// start reading APRS-IS packets
-    gio_read = g_io_channel_unix_new (ctx->sockfd);
-    g_io_channel_set_encoding(gio_read, NULL, &error);
-    if (!g_io_add_watch (gio_read, G_IO_IN | G_IO_HUP, gio_got_packet, NULL))
-        g_error ("Cannot add watch on GIOChannel!\n");
-	*/
+
     context = g_option_context_new ("- Map browser");
     g_option_context_set_help_enabled(context, FALSE);
     g_option_context_add_main_entries (context, entries, NULL);

@@ -83,22 +83,22 @@ int aprsis_login(aprsis_ctx *ctx) {
 	// wait for prompt, send filter message
 	char buf[256];
 	int n;
-	
+
 	n = read(ctx->sockfd, buf, 256);
 	if (n<0) {
 		error("couldn't read from socket");
 	}
+	//printf("got\t%s\n",buf); // FIXME make these debug messages
 
-	sprintf(buf, APRSIS_LOGIN, ctx->user, ctx->pass);
+	sprintf(buf, APRSIS_LOGIN"\n", ctx->user, ctx->pass);
+	//printf("sending\t%s\n", buf);
 	write(ctx->sockfd, buf, strlen(buf));
-
-	if (ctx->radius != 0) {
-		memset(buf, '\0', sizeof(buf));
-		snprintf(buf, sizeof(buf), " filter r/%.0f/%.0f/%d", ctx->latitude, ctx->longitude, ctx->radius);
-		write(ctx->sockfd, buf, strlen(buf));
+	n = read(ctx->sockfd, buf, 256);
+	if (n<0) {
+		error("couldn't read from socket");
 	}
-
-	write(ctx->sockfd, "\n", 1);
+	//printf("got\t%s\n",buf);
+	
 	return 0;
 }
 
@@ -110,7 +110,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 
 	if (ctx->sockfd != -1) {
 		char buf[64];
-		snprintf(buf, sizeof(buf), "filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
+		snprintf(buf, sizeof(buf), "#filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
 		printf("\nSending filter: %s\n", buf);
 		write(ctx->sockfd, buf, strlen(buf));
 	}
@@ -149,10 +149,13 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
 		
 	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR)
-	g_error ("Error reading: %s\n", err->message);
+	if (ret == G_IO_STATUS_ERROR) g_error ("Error reading: %s\n", err->message);
 
-	printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);	
+	if (msg[0] == '#') {
+		printf("can ignore comment message: %s\n", msg);
+	} else {
+		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
+	}
 
 }
 
@@ -166,8 +169,8 @@ static void *start_aprsis_thread(void *ptr) {
 	aprsis_connect(ctx);
 
 	printf("logging in...\n");
-	aprsis_set_filter(ctx, 55, -4, 600);
 	aprsis_login(ctx);
+	aprsis_set_filter(ctx, 55, -4, 600);
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
