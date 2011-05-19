@@ -116,6 +116,16 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 	}
 }
 
+void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
+
+	if (ctx->sockfd != -1) {
+		char buf[64];
+		snprintf(buf, sizeof(buf), "#filter %s\n", filter);
+		printf("\nSending filter: %s\n", buf);
+		write(ctx->sockfd, buf, strlen(buf));
+	}
+}
+
 
 void aprsis_close(aprsis_ctx *ctx) {
 	close(ctx->sockfd);
@@ -171,6 +181,8 @@ static void *start_aprsis_thread(void *ptr) {
 	printf("logging in...\n");
 	aprsis_login(ctx);
 	aprsis_set_filter(ctx, 55, -4, 600);
+	//aprsis_set_filter_string(ctx, "p/M/G/2");
+	//aprsis_set_filter_string(ctx, "p/HB9");
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
