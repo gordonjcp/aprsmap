@@ -60,25 +60,17 @@ static GdkPixbuf *g_symbol2_image = NULL;
 static GdkPixbuf *g_wx_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
-gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
-	GIOStatus ret;
-	GError *err = NULL;
-	gchar *msg;
-	gsize len;
+//gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) {
+
+gboolean process_packet(gchar *msg) {
+
 	fap_packet_t *packet;
 	char errmsg[256]; // ugh
 	char symb[3];
 	char wx[4] = "/_";
 	char car[4] = "/>";
-	
-	if (condition & G_IO_HUP)
-		g_error ("Read end of pipe died!\n");
 
-	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR)
-	g_error ("Error reading: %s\n", err->message);
 
-	printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
@@ -119,8 +111,6 @@ gboolean gio_got_packet(GIOChannel *gio, GIOCondition condition, gpointer data) 
 	}
 
 	fap_free(packet);
-
-	g_free (msg);
 	return TRUE;
 }
 static gboolean

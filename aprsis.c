@@ -14,6 +14,7 @@
 #include <errno.h>
 
 #include "aprsis.h"
+#include "mapviewer.h"
 
 
 
@@ -165,6 +166,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 		printf("can ignore comment message: %s\n", msg);
 	} else {
 		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
+		process_packet(msg);
 	}
 
 	g_free(msg);
