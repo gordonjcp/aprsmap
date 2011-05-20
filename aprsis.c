@@ -171,7 +171,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
-		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
+		printf ("\n------------------------------------------\nRead %u bytes: %s\n", (unsigned int) len, msg);
 		process_packet(msg);
 	}
 
