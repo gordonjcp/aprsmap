@@ -64,8 +64,10 @@ gboolean process_packet(gchar *msg) {
 	fap_packet_t *packet;
 	char errmsg[256]; // ugh
 	char symb[3];
-	char wx[4] = "/_";
-	char car[4] = "/>";
+	char tab[2];
+	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
+	char *table[] = {"/!","/#","/$","/%","/%","/(","/*","/+","/,","/-","/.","//","/:","/<","/=","/>","/?","/@","/A","/B","/C","/G","/H","/I","/K","/L","/M","/N","/O","/P","/R","/S","/T","/U","/W","/X","/Y","/Z","/[","/\\","/]","/^","/_","/`","/a","/b","/c","/d","/e","/f","/g","/h","/i","/j","/k","/l","/m","/n","/o","/p","/q","/r","/s","/t","/u","/v","/w","/x","/y","/z","/}",NULL};
+	char** s = table;
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
@@ -75,18 +77,45 @@ gboolean process_packet(gchar *msg) {
 	} else if (packet->src_callsign) {
                 printf("Got packet from %s\n", packet->src_callsign);
 	}
-	if (packet->latitude) {
-		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
 		//Take symbol, fire it into char array and hopefully we can use symbols in
 		//identifying stations
-		snprintf(symb,sizeof(symb),"%c%c", packet->symbol_table,packet->symbol_code);
-		printf("Symbol Code: %s\n", symb);
-		//Compare it to the symbol I've defined for wx stations "/_"
-		if (strcmp (symb, wx) == 0) {
-		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
-		printf("WX Station");		
-		} else if (strcmp (symb, car) == 0) {
+		snprintf(symb,sizeof(symb),"%c%c",packet->symbol_table,packet->symbol_code);
+		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
+		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
+		//check if it is a symbol from the primary table
+		if 	(strcmp(tab,"/") == 0) {
 
+	if (packet->latitude) {
+		//print lat/lon value
+		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
+		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the data.
+		//First, create a comparison flag.
+		int comp_flag=0;
+		//for loop integer value
+		int n;
+		for (n=0;n<73;n++){
+			if (strcmp(symb,*s) == 0) {
+				//debug ~ print what we think it is
+				printf("Debug Data: %s ",*s);
+				comp_flag = n;
+				//debug, print comparison_flag value beside symbol
+				printf("%i\n",comp_flag);
+				//break out of for loop.
+				n=72;
+				} else if (strcmp(symb, *s) == 1) 
+				{ ++s; }
+		}
+		//compare switch case, perform action based on station type. Could well split this into a new file?
+		switch (comp_flag) {
+			case 1:
+			printf("Digipeater Station");
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+			break;
+			case 9:
+			printf("Home QTH"); 
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+			break;
+			case 15:
 			if (packet->course != NULL) {
 				printf("Course: %d\n", *(packet->course));
 			}
@@ -97,13 +126,24 @@ gboolean process_packet(gchar *msg) {
 
 			printf("Mobile Rig");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
-		} else {
+					break;
+		case 42:
+					osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
+					printf("WX Station"); 
+					
+					break;
+		
+		default:
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-		}
-
+		break;
+			}
     } else {
 		printf("has no position information\n");
 	}
+} else { 
+		printf("is not primary. Currently, do not want.");
+}
+
 
 	fap_free(packet);
 	
