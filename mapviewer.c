@@ -57,6 +57,8 @@ static GdkPixbuf *g_star_image = NULL;
 static GdkPixbuf *g_symbol1_image = NULL;
 static GdkPixbuf *g_symbol2_image = NULL;
 static GdkPixbuf *g_wx_image = NULL;
+static GdkPixbuf *g_house_image = NULL;
+static GdkPixbuf *g_digi_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
 gboolean process_packet(gchar *msg) {
@@ -109,11 +111,11 @@ gboolean process_packet(gchar *msg) {
 		switch (comp_flag) {
 			case 1:
 			printf("Digipeater Station");
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_digi_image);
 			break;
 			case 9:
 			printf("Home QTH"); 
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_house_image);
 			break;
 			case 15:
 			if (packet->course != NULL) {
@@ -353,6 +355,8 @@ main (int argc, char **argv)
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
     g_symbol1_image = gdk_pixbuf_new_from_file("campervan.png", &error);
 	g_wx_image = gdk_pixbuf_new_from_file("wx.gif", &error);
+	g_house_image = gdk_pixbuf_new_from_file("house.GIF", &error);
+	g_digi_image = gdk_pixbuf_new_from_file("digi.GIF", &error);
     //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
 
     builder = gtk_builder_new();
