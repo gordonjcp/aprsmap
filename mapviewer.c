@@ -61,9 +61,19 @@ static GdkPixbuf *g_house_image = NULL;
 static GdkPixbuf *g_digi_image = NULL;
 static OsmGpsMapImage *g_last_image = NULL;
 
+typedef struct {
+	gchar *callsign;
+	char symbol[2];
+	OsmGpsMapImage *image;
+	GdkPixbuf *pix;
+} APRSMapStation;
+
+GHashTable *stations;
+
 gboolean process_packet(gchar *msg) {
 
 	fap_packet_t *packet;
+	GError *error = NULL;
 	char errmsg[256]; // ugh
 	char symb[3];
 	char tab[2];
@@ -77,7 +87,7 @@ gboolean process_packet(gchar *msg) {
 		fap_explain_error(*packet->error_code, errmsg);
 		printf("%s", errmsg);
 	} else if (packet->src_callsign) {
-                printf("Got packet from %s\n", packet->src_callsign);
+                printf("Got packet from %s (%d bytes)\n", packet->src_callsign, strlen(packet->src_callsign));
 	}
 		//Take symbol, fire it into char array and hopefully we can use symbols in
 		//identifying stations
@@ -87,73 +97,24 @@ gboolean process_packet(gchar *msg) {
  
 	if (packet->latitude) {
 		//print lat/lon value
+		
+		
+		
+        APRSMapStation *station = g_hash_table_lookup(stations, packet->src_callsign);
+        if (!station) {
+    		station = g_new0(APRSMapStation, 1);
+    		station->callsign = g_strdup(packet->src_callsign);
+    		station->pix = gdk_pixbuf_new_from_file("digi.GIF", &error);
+    		printf("%x %d\n", station->pix, error);
+    		
+    		g_hash_table_insert(stations, packet->src_callsign, station);
+			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
+    	} else {
+    		printf("already got %s\n", station->callsign);
+    	}
+		
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
 
-				//First, create a comparison flag.
-		int comp_flag=0;
-		//for loop integer value
-		int n;
-		for (n=0;n<87;n++){
-			if (strcmp(symb,*s) == 0) {
-				//debug ~ print what we think it is
-				printf("Debug Data: %s ",*s);
-				comp_flag = n;
-				//debug, print comparison_flag value beside symbol
-				printf("%i\n",comp_flag);
-				//break out of for loop.
-				n=87;
-				} else if (strcmp(symb, *s) !=0) 
-				{ ++s; }
-		}
-
-		//check if it is a symbol from the primary table
-		if 	(strcmp(tab,"/") == 0) {
-
-		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the image.
-
-
-		//compare switch case, perform action based on station type. Could well split this into a new file?
-		switch (comp_flag) {
-			case 1:
-			printf("Digipeater Station");
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_digi_image);
-			break;
-
-			case 9:
-			printf("Home QTH"); 
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_house_image);
-			break;
-			case 15:
-			if (packet->course != NULL) {
-				printf("Course: %d\n", *(packet->course));
-			}
-
-			if (packet->speed != NULL) {
-				printf("Speed: %fkm/h\n", *(packet->speed));
-			}
-
-			printf("Mobile Rig");
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
-					break;
-		case 45:
-					osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
-					printf("WX Station"); 
-					
-					break;
-		
-		default:
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-		break;
-			}
-
-} else if (strcmp(tab,"\\") == 0) {
-	osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-	printf("Is Secondary (parse code to be added soon)");
-
-} else { 
-		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-		printf("This labelset is currently not supported by aprsmap");
-}
     } else {
 		printf("has no position information\n");
 	}
@@ -369,6 +330,9 @@ main (int argc, char **argv)
 	g_house_image = gdk_pixbuf_new_from_file("house.GIF", &error);
 	g_digi_image = gdk_pixbuf_new_from_file("digi.GIF", &error);
     //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
+	
+	stations = g_hash_table_new(g_int_hash, g_int_equal);
+
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "mapviewer.ui", &error);
