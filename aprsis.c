@@ -52,7 +52,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	// get a list of addresses
 	err = getaddrinfo(ctx->host, ctx->port, NULL, &res);
 	if (err != 0)   {
-		printf("error in getaddrinfo: %s\n", gai_strerror(err));
+		g_error("error in getaddrinfo: %s\n", gai_strerror(err));
 		return 1;
 	}
 
@@ -71,7 +71,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
-			printf("can't connect - %s\n",strerror(errno));
+			g_error("can't connect - %s\n",strerror(errno));
 			res = res->ai_next;
 		}
 	} while (err);
@@ -186,7 +186,9 @@ static void *start_aprsis_thread(void *ptr) {
 	aprsis_ctx *ctx = ptr;
 	
 	g_message("connecting to %s", ctx->host);
-	aprsis_connect(ctx);
+	if (!aprsis_connect(ctx)) {
+		printf("failed to connect, for some reason\n");
+	}
 
 	g_message("logging in...\n");
 	aprsis_login(ctx);
