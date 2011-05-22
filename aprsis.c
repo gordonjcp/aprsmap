@@ -50,30 +50,32 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// get a list of addresses
-	err = getaddrinfo(ctx->host, ctx->port, NULL, &res);
+	err = getaddrinfo(ctx->host, ctx->port, &hints, &res);
 	if (err != 0)   {
 		g_error("error in getaddrinfo: %s\n", gai_strerror(err));
 		return 1;
-	}
+	} 
+
+	char hostname[NI_MAXHOST] = "";
 
 	// loop down the list, and try to connect
 	do {
-		char hostname[NI_MAXHOST] = "";
 		// get the name, we don't really need this
+		printf("%x %x\n", res, res->ai_next);
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
 		if (err) {
-			printf("error in getnameinfo: %s\n", gai_strerror(err));
+			g_error("error in getnameinfo: %s\n", gai_strerror(err));
 		}
-		g_message("trying hostname: %s\n", hostname);
-		
+		g_message("trying hostname: %s %d %d\n", hostname, res->ai_socktype, res->ai_protocol);
+
 		// set up a socket, and attempt to connect
-		//sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
-			g_error("can't connect - %s\n",strerror(errno));
+			g_message("can't connect - %s\n",strerror(errno));
 			res = res->ai_next;
 		}
+
 	} while (err);
 	
 	return 1;
