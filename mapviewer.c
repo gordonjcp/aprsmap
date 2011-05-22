@@ -290,7 +290,7 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "14580", "aprsmap", "-1");
+	aprsis_ctx *ctx = aprsis_new("rotate.aprs2.net", "14580", "aprsmap", "-1");
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
