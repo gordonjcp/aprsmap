@@ -16,8 +16,6 @@
 #include "aprsis.h"
 #include "mapviewer.h"
 
-
-
 static gboolean reconnect;
 static guint aprs1;
 GIOChannel *aprsis_io;
@@ -35,9 +33,10 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 }
 
 int aprsis_connect(aprsis_ctx *ctx) {
+	// connect to an APRS-IS server
+	
 	struct addrinfo server;
-
-	int err;
+	gint err;
 
 	// somewhere to put the result of the lookup
 	struct addrinfo *res;
@@ -50,33 +49,33 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	hints.ai_protocol = IPPROTO_TCP;
 
 	// get a list of addresses
-	err = getaddrinfo(ctx->host, ctx->port, NULL, &res);
+	err = getaddrinfo(ctx->host, ctx->port, &hints, &res);
 	if (err != 0)   {
 		g_error("error in getaddrinfo: %s\n", gai_strerror(err));
 		return 1;
-	}
+	} 
+
+	char hostname[NI_MAXHOST] = "";
 
 	// loop down the list, and try to connect
 	do {
-		char hostname[NI_MAXHOST] = "";
-		// get the name, we don't really need this
+		// get the name
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
 		if (err) {
-			printf("error in getnameinfo: %s\n", gai_strerror(err));
+			g_error("error in getnameinfo: %s\n", gai_strerror(err));
 		}
-		g_message("trying hostname: %s\n", hostname);
-		
+		g_message("trying hostname: %s %d %d\n", hostname, res->ai_socktype, res->ai_protocol);
+
 		// set up a socket, and attempt to connect
-		//sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
-			g_error("can't connect - %s\n",strerror(errno));
+			g_message("can't connect - %s\n",strerror(errno));
 			res = res->ai_next;
 		}
+
 	} while (err);
-	
-	return 1;
+	free(res);
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
@@ -84,6 +83,8 @@ int aprsis_login(aprsis_ctx *ctx) {
 	char buf[256];
 	int n;
 
+
+	// note that this doesn't *actually* check what the prompt is
 	n = read(ctx->sockfd, buf, 256);
 	if (n<0) {
 		error("couldn't read from socket");
@@ -103,7 +104,7 @@ int aprsis_login(aprsis_ctx *ctx) {
 }
 
 void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int radius) {
-
+	// sets a filter given latitude, longitude and radius
 	ctx->latitude = latitude;
 	ctx->longitude = longitude;
 	ctx->radius = radius;
@@ -117,7 +118,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 }
 
 void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
-
+	// send a filter string, for more complex filters
 	if (ctx->sockfd != -1) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter %s\n", filter);
@@ -128,7 +129,7 @@ void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
 
 
 void aprsis_close(aprsis_ctx *ctx) {
-
+	// close the connection and clean up
 	close(ctx->sockfd);
 	if (ctx->host != NULL) {
 		free(ctx->host);
@@ -162,6 +163,8 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	gchar *msg;
 	gsize len;
 
+	g_message("condition = %d\n", condition);
+
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
 		
@@ -181,7 +184,6 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 
 
 static void *start_aprsis_thread(void *ptr) {
-
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
 	
@@ -193,21 +195,19 @@ static void *start_aprsis_thread(void *ptr) {
 	g_message("logging in...\n");
 	aprsis_login(ctx);
 	aprsis_set_filter(ctx, 55, -4, 600);
-	//aprsis_set_filter_string(ctx, "p/M/G/2");
-	//aprsis_set_filter_string(ctx, "p/HB9");
+	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
+	//aprsis_set_filter_string(ctx, "p/HB9"); // Swiss callsigns
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
     if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_HUP, aprsis_got_packet, NULL))
         g_error ("Cannot add watch on GIOChannel!\n");
-	
-	return NULL;
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
 	// prepare the APRS-IS connection thread
 	reconnect = FALSE;  // don't keep trying if we've already tried to start one
-	
+	// FIXME I should finish the "don't start two threads" code
 	// remove the IO channel and watch
 	if (aprs1) {
 		g_source_remove(aprs1);
