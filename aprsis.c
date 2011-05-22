@@ -176,7 +176,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	}
 
 	g_free(msg);
-
+	return TRUE;
 }
 
 

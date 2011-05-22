@@ -68,7 +68,7 @@ gboolean process_packet(gchar *msg) {
 	char symb[3];
 	char tab[2];
 	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
-	char *table[] = {"/!","/#","/$","/%","/%","/(","/*","/+","/,","/-","/.","//","/:","/<","/=","/>","/?","/@","/A","/B","/C","/G","/H","/I","/K","/L","/M","/N","/O","/P","/R","/S","/T","/U","/W","/X","/Y","/Z","/[","/\\","/]","/^","/_","/`","/a","/b","/c","/d","/e","/f","/g","/h","/i","/j","/k","/l","/m","/n","/o","/p","/q","/r","/s","/t","/u","/v","/w","/x","/y","/z","/}",NULL};
+	char *table[] = {"!","#","$","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","}","&","0","1","2","3","4","5","6","7","8","9",NULL};
 	char** s = table;
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
@@ -81,21 +81,19 @@ gboolean process_packet(gchar *msg) {
 	}
 		//Take symbol, fire it into char array and hopefully we can use symbols in
 		//identifying stations
-		snprintf(symb,sizeof(symb),"%c%c",packet->symbol_table,packet->symbol_code);
+		snprintf(symb,sizeof(symb),"%c",packet->symbol_code);
 		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
 		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
-		//check if it is a symbol from the primary table
-		if 	(strcmp(tab,"/") == 0) {
-
+ 
 	if (packet->latitude) {
 		//print lat/lon value
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the data.
-		//First, create a comparison flag.
+
+				//First, create a comparison flag.
 		int comp_flag=0;
 		//for loop integer value
 		int n;
-		for (n=0;n<73;n++){
+		for (n=0;n<87;n++){
 			if (strcmp(symb,*s) == 0) {
 				//debug ~ print what we think it is
 				printf("Debug Data: %s ",*s);
@@ -103,16 +101,24 @@ gboolean process_packet(gchar *msg) {
 				//debug, print comparison_flag value beside symbol
 				printf("%i\n",comp_flag);
 				//break out of for loop.
-				n=72;
-				} else if (strcmp(symb, *s) == 1) 
+				n=87;
+				} else if (strcmp(symb, *s) !=0) 
 				{ ++s; }
 		}
+
+		//check if it is a symbol from the primary table
+		if 	(strcmp(tab,"/") == 0) {
+
+		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the image.
+
+
 		//compare switch case, perform action based on station type. Could well split this into a new file?
 		switch (comp_flag) {
 			case 1:
 			printf("Digipeater Station");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_digi_image);
 			break;
+
 			case 9:
 			printf("Home QTH"); 
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_house_image);
@@ -129,7 +135,7 @@ gboolean process_packet(gchar *msg) {
 			printf("Mobile Rig");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
 					break;
-		case 42:
+		case 45:
 					osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
 					printf("WX Station"); 
 					
@@ -139,13 +145,18 @@ gboolean process_packet(gchar *msg) {
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
 		break;
 			}
+
+} else if (strcmp(tab,"\\") == 0) {
+	osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+	printf("Is Secondary (parse code to be added soon)");
+
+} else { 
+		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
+		printf("This labelset is currently not supported by aprsmap");
+}
     } else {
 		printf("has no position information\n");
 	}
-} else { 
-		printf("is not primary. Currently, do not want.");
-}
-
 
 	fap_free(packet);
 	
@@ -219,7 +230,7 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	return FALSE;
 }
 
-static void
+/*static void
 on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
 {
     gchar *s;
@@ -229,16 +240,16 @@ on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data
     s = g_strdup_printf("%d", tiles);
     gtk_label_set_text(label, s);
     g_free(s);
-}
+}*/
 
-static void
+/* static void
 on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
 {
     const char *propname = user_data;
     float f = gtk_adjustment_get_value(adjustment);
     if (g_last_image)
         g_object_set (g_last_image, propname, f, NULL);
-}
+} */
 
 static void
 on_close (GtkWidget *widget, gpointer user_data)
@@ -279,7 +290,7 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	aprsis_ctx *ctx = aprsis_new("england.aprs2.net", "14580", "aprsmap", "-1");
+	aprsis_ctx *ctx = aprsis_new("rotate.aprs2.net", "14580", "aprsmap", "-1");
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
@@ -396,9 +407,9 @@ main (int argc, char **argv)
     g_signal_connect (G_OBJECT (map), "button-release-event",
                 G_CALLBACK (on_button_release_event),
                 (gpointer) gtk_builder_get_object(builder, "text_entry"));
-    g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
+   /* g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
                 G_CALLBACK (on_tiles_queued_changed),
-                (gpointer) gtk_builder_get_object(builder, "cache_label"));
+                (gpointer) gtk_builder_get_object(builder, "cache_label")); */
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
     g_signal_connect (widget, "destroy",
