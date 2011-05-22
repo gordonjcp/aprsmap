@@ -84,14 +84,12 @@ gboolean process_packet(gchar *msg) {
 		snprintf(symb,sizeof(symb),"%c",packet->symbol_code);
 		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
 		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
-		//check if it is a symbol from the primary table
-		if 	(strcmp(tab,"/") == 0) {
-
+ 
 	if (packet->latitude) {
 		//print lat/lon value
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the data.
-		//First, create a comparison flag.
+
+				//First, create a comparison flag.
 		int comp_flag=0;
 		//for loop integer value
 		int n;
@@ -107,6 +105,13 @@ gboolean process_packet(gchar *msg) {
 				} else if (strcmp(symb, *s) == 1) 
 				{ ++s; }
 		}
+
+		//check if it is a symbol from the primary table
+		if 	(strcmp(tab,"/") == 0) {
+
+		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the image.
+
+
 		//compare switch case, perform action based on station type. Could well split this into a new file?
 		switch (comp_flag) {
 			case 1:
@@ -139,17 +144,18 @@ gboolean process_packet(gchar *msg) {
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
 		break;
 			}
-    } else {
-		printf("has no position information\n");
-	}
-} else if (strcmp(tab,"\\") == 0) {
 
+} else if (strcmp(tab,"\\") == 0) {
+	osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
 	printf("Is Secondary (parse code to be added soon)");
 
 } else { 
+		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
 		printf("This labelset is currently not supported by aprsmap");
 }
-
+    } else {
+		printf("has no position information\n");
+	}
 
 	fap_free(packet);
 	
