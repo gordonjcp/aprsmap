@@ -68,7 +68,7 @@ gboolean process_packet(gchar *msg) {
 	char symb[3];
 	char tab[2];
 	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
-	char *table[] = {"/!","/#","/$","/%","/%","/(","/*","/+","/,","/-","/.","//","/:","/<","/=","/>","/?","/@","/A","/B","/C","/G","/H","/I","/K","/L","/M","/N","/O","/P","/R","/S","/T","/U","/W","/X","/Y","/Z","/[","/\\","/]","/^","/_","/`","/a","/b","/c","/d","/e","/f","/g","/h","/i","/j","/k","/l","/m","/n","/o","/p","/q","/r","/s","/t","/u","/v","/w","/x","/y","/z","/}",NULL};
+	char *table[] = {"!","#","$","%","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","G","H","I","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","}",NULL};
 	char** s = table;
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
@@ -81,7 +81,7 @@ gboolean process_packet(gchar *msg) {
 	}
 		//Take symbol, fire it into char array and hopefully we can use symbols in
 		//identifying stations
-		snprintf(symb,sizeof(symb),"%c%c",packet->symbol_table,packet->symbol_code);
+		snprintf(symb,sizeof(symb),"%c",packet->symbol_code);
 		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
 		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
 		//check if it is a symbol from the primary table
@@ -142,8 +142,12 @@ gboolean process_packet(gchar *msg) {
     } else {
 		printf("has no position information\n");
 	}
+} else if (strcmp(tab,"\\") == 0) {
+
+	printf("Is Secondary (parse code to be added soon)");
+
 } else { 
-		printf("is not primary. Currently, do not want.");
+		printf("This labelset is currently not supported by aprsmap");
 }
 
 
@@ -219,7 +223,7 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	return FALSE;
 }
 
-static void
+/*static void
 on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
 {
     gchar *s;
@@ -229,16 +233,16 @@ on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data
     s = g_strdup_printf("%d", tiles);
     gtk_label_set_text(label, s);
     g_free(s);
-}
+}*/
 
-static void
+/* static void
 on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
 {
     const char *propname = user_data;
     float f = gtk_adjustment_get_value(adjustment);
     if (g_last_image)
         g_object_set (g_last_image, propname, f, NULL);
-}
+} */
 
 static void
 on_close (GtkWidget *widget, gpointer user_data)
@@ -396,9 +400,9 @@ main (int argc, char **argv)
     g_signal_connect (G_OBJECT (map), "button-release-event",
                 G_CALLBACK (on_button_release_event),
                 (gpointer) gtk_builder_get_object(builder, "text_entry"));
-    g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
+   /* g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
                 G_CALLBACK (on_tiles_queued_changed),
-                (gpointer) gtk_builder_get_object(builder, "cache_label"));
+                (gpointer) gtk_builder_get_object(builder, "cache_label")); */
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
     g_signal_connect (widget, "destroy",
