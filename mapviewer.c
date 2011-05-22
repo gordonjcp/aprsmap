@@ -68,7 +68,7 @@ gboolean process_packet(gchar *msg) {
 	char symb[3];
 	char tab[2];
 	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
-	char *table[] = {"!","#","$","%","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","G","H","I","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","}",NULL};
+	char *table[] = {"!","#","$","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","}","&","0","1","2","3","4","5","6","7","8","9",NULL};
 	char** s = table;
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
@@ -93,7 +93,7 @@ gboolean process_packet(gchar *msg) {
 		int comp_flag=0;
 		//for loop integer value
 		int n;
-		for (n=0;n<73;n++){
+		for (n=0;n<87;n++){
 			if (strcmp(symb,*s) == 0) {
 				//debug ~ print what we think it is
 				printf("Debug Data: %s ",*s);
@@ -101,8 +101,8 @@ gboolean process_packet(gchar *msg) {
 				//debug, print comparison_flag value beside symbol
 				printf("%i\n",comp_flag);
 				//break out of for loop.
-				n=72;
-				} else if (strcmp(symb, *s) == 1) 
+				n=87;
+				} else if (strcmp(symb, *s) !=0) 
 				{ ++s; }
 		}
 
@@ -118,6 +118,7 @@ gboolean process_packet(gchar *msg) {
 			printf("Digipeater Station");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_digi_image);
 			break;
+
 			case 9:
 			printf("Home QTH"); 
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_house_image);
@@ -134,7 +135,7 @@ gboolean process_packet(gchar *msg) {
 			printf("Mobile Rig");
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
 					break;
-		case 42:
+		case 45:
 					osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
 					printf("WX Station"); 
 					
