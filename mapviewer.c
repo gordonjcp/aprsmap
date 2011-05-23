@@ -33,6 +33,7 @@ OsmGpsMap *map;
 GtkEntry *latent;
 GtkEntry *lonent;
 GtkWidget *popup;
+GtkComboBox *server;
 
 gdouble homelat = 55.0;
 gdouble homelon = -4.0;
@@ -225,15 +226,15 @@ on_properties_ok_clicked (GtkWidget *widget, gpointer user_data)
 	homelon=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(lonent)), NULL);
 	//Check Latitude/Longitude entries are correct
 	if(homelat > 89.9 || homelat < -89.9) {
-	printf("Invalid Lat\n");
+	//printf("Invalid Lat\n");
 	homelat = oldlat; 
-	printf("New Lat:%f\n", homelat);
+	//printf("New Lat:%f\n", homelat);
 	gtk_entry_set_text(latent, g_strdup_printf("%f",homelat));
 	}
 	if(homelon > 180 || homelon < -180) {
-	printf("Invalid Lon\n");
+	//printf("Invalid Lon\n");
 	homelon = oldlon; 
-	printf("New Lon:%f\n", homelon);
+	//printf("New Lon:%f\n", homelon);
 	gtk_entry_set_text(lonent, g_strdup_printf("%f",homelon));
 	}
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
