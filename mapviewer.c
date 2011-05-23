@@ -115,11 +115,13 @@ gboolean process_packet(gchar *msg) {
 	    	} else {
 	    		station->pix = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
 	    	}
-   		
+
+			station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);   		
     		g_hash_table_insert(stations, packet->src_callsign, station);
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
+
     	} else {
     		printf("already got %s\n", station->callsign);
+    		
     	}
 		
 		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
