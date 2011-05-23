@@ -30,13 +30,12 @@
 #include "aprsis.h"
 
 OsmGpsMap *map;
-
-GtkWidget *popup;
 GtkEntry *latent;
 GtkEntry *lonent;
+GtkWidget *popup;
 
-double homelat = 55.0;
-double homelon = -4.0;
+gdouble homelat = 55.0;
+gdouble homelon = -4.0;
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -220,7 +219,26 @@ on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
 static gboolean
 on_properties_ok_clicked (GtkWidget *widget, gpointer user_data)
 {
+	gdouble oldlat = homelat;
+	gdouble oldlon = homelon;
+	homelat=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(latent)),NULL);
+	homelon=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(lonent)), NULL);
+	//Check Latitude/Longitude entries are correct
+	if(homelat > 89.9 || homelat < -89.9) {
+	printf("Invalid Lat\n");
+	homelat = oldlat; 
+	printf("New Lat:%f\n", homelat);
+	gtk_entry_set_text(latent, g_strdup_printf("%f",homelat));
+	}
+	if(homelon > 180 || homelon < -180) {
+	printf("Invalid Lon\n");
+	homelon = oldlon; 
+	printf("New Lon:%f\n", homelon);
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",homelon));
+	}
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
+	//centre map on new coordinates after widget closed
+	osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
 	return FALSE;
 }
 static gboolean
@@ -281,8 +299,8 @@ main (int argc, char **argv)
 {
     GtkBuilder *builder;
     GtkWidget *widget;
-	
     GtkAccelGroup *ag;
+
     OsmGpsMapLayer *osd;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
@@ -433,10 +451,8 @@ main (int argc, char **argv)
 	//Set up GTK_ENTRY boxes in the preferences pop up
 	latent = GTK_ENTRY(gtk_builder_get_object(builder, "declat"));
 	lonent = GTK_ENTRY(gtk_builder_get_object(builder, "declon"));
-	gchar *latmsg = g_strdup_printf("%f",homelat);
-	gchar *lonmsg = g_strdup_printf("%f",homelon);
-	gtk_entry_set_text(latent, latmsg);
-	gtk_entry_set_text(lonent, lonmsg);
+	gtk_entry_set_text(latent, g_strdup_printf("%f",homelat));
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",homelon));
 
 	g_object_unref( G_OBJECT( builder ) );
 
