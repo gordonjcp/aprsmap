@@ -55,7 +55,7 @@ static GOptionEntry entries[] =
 
 static GdkPixbuf *g_star_image = NULL;
 static GdkPixbuf *g_symbol1_image = NULL;
-static GdkPixbuf *g_symbol2_image = NULL;
+static GdkPixbuf *g_symbol_image = NULL;
 static GdkPixbuf *g_wx_image = NULL;
 static GdkPixbuf *g_house_image = NULL;
 static GdkPixbuf *g_digi_image = NULL;
@@ -101,11 +101,17 @@ gboolean process_packet(gchar *msg) {
 		
 		
         APRSMapStation *station = g_hash_table_lookup(stations, packet->src_callsign);
+        guint xo, yo, c;
         if (!station) {
+    		c = packet->symbol_code-32;
+    		
+    		yo = (c*16)%256;
+    		xo = c &0xf0;
     		station = g_new0(APRSMapStation, 1);
     		station->callsign = g_strdup(packet->src_callsign);
-    		station->pix = gdk_pixbuf_new_from_file("digi.GIF", &error);
-    		printf("%x %d\n", station->pix, error);
+    		station->pix = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
+    		printf(" %d\n", packet->symbol_code);
+
     		
     		g_hash_table_insert(stations, packet->src_callsign, station);
 			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
@@ -329,7 +335,7 @@ main (int argc, char **argv)
 	g_wx_image = gdk_pixbuf_new_from_file("wx.gif", &error);
 	g_house_image = gdk_pixbuf_new_from_file("house.GIF", &error);
 	g_digi_image = gdk_pixbuf_new_from_file("digi.GIF", &error);
-    //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
+    g_symbol_image = gdk_pixbuf_new_from_file("allicons.png", &error);
 	
 	stations = g_hash_table_new(g_int_hash, g_int_equal);
 
