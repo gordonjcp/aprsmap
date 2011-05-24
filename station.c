@@ -33,12 +33,62 @@ char *packet_type[] = {
 
 } ;
 
+static void
+convert_alpha (guchar *dest_data,
+               int     dest_stride,
+               guchar *src_data,
+               int     src_stride,
+               int     src_x,
+               int     src_y,
+               int     width,
+               int     height)
+{
+  int x, y;
+
+  src_data += src_stride * src_y + src_x * 4;
+
+  for (y = 0; y < height; y++) {
+    guint32 *src = (guint32 *) src_data;
+
+    for (x = 0; x < width; x++) {
+      guint alpha = src[x] >> 24;
+
+      if (alpha == 0)
+        {
+          dest_data[x * 4 + 0] = 0;
+          dest_data[x * 4 + 1] = 0;
+          dest_data[x * 4 + 2] = 0;
+        }
+      else
+        {
+          dest_data[x * 4 + 0] = (((src[x] & 0xff0000) >> 16) * 255 + alpha / 2) / alpha;
+          dest_data[x * 4 + 1] = (((src[x] & 0x00ff00) >>  8) * 255 + alpha / 2) / alpha;
+          dest_data[x * 4 + 2] = (((src[x] & 0x0000ff) >>  0) * 255 + alpha / 2) / alpha;
+        }
+      dest_data[x * 4 + 3] = alpha;
+    }
+
+    src_data += src_stride;
+    dest_data += dest_stride;
+  }
+}
+
+
 
 static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 	// return the symbol pixbuf
 
+	guint width=64, height=20;
+
 	guint xo, yo, c;
 	GdkPixbuf *pix;
+	GdkPixbuf *symbol;
+	cairo_text_extents_t extent;
+	cairo_surface_t *surface;
+	cairo_t *cr;
+	cairo_content_t content;
+	GdkPixbuf *dest;
+
 
 	if (packet->symbol_table && packet->symbol_code) {
 		printf("Symbol: '%c%c'\n", packet->symbol_table, packet->symbol_code);
@@ -47,10 +97,38 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
    		yo = (c*16)%256;
    		xo = c &0xf0;			
 		if (packet->symbol_table == '\\') {
-   			pix = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
+   			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
 		} else {
-			pix = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
+			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
 		}
+		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+
+		cr = cairo_create(surface);
+	 cairo_set_source_rgba(cr, 1, 1, .75, 0.5);
+	 cairo_rectangle(cr, 0, 0, 64, 16);
+    cairo_clip(cr);
+    	cairo_paint(cr);
+    	cairo_set_font_size(cr, 10);
+    	cairo_move_to(cr, 20, 12);
+    	cairo_set_source_rgba(cr, 0, 0, 0, 1); // red for cursor
+    	cairo_show_text(cr,packet->src_callsign);
+    	
+    	
+		cairo_surface_flush(surface);
+
+		content = cairo_surface_get_content(surface);
+		pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+
+    convert_alpha (gdk_pixbuf_get_pixels (pix),
+                   gdk_pixbuf_get_rowstride (pix),
+                   cairo_image_surface_get_data (surface),
+                   cairo_image_surface_get_stride (surface),
+                   0, 0,
+                   width, height);
+
+		cairo_surface_destroy(surface);
+		cairo_destroy(cr);
+		
 		return pix;
 	}
 	
