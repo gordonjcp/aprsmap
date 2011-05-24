@@ -73,11 +73,9 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		if (err < 0) {
 			g_message("can't connect - %s",strerror(errno));
 		}
-		printf("err is %d\n", err);
 	};
 	free(res);
 	// FIXME make errors work properly, this is ugly
-	printf("ctx->sockfx = %d\n", ctx->sockfd);
 	if (!err) {
 		return 0;
 	} else {
@@ -170,14 +168,22 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	gchar *msg;
 	gsize len;
 
-	g_message("condition = %d\n", condition);
-
 	if (condition & G_IO_HUP)
-		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
+		g_error ("Read end of pipe died!");   // FIXME - handle this more gracefully
+
+	if (condition & G_IO_ERR) {
+		g_message ("IO error");
+		return FALSE;
+	}
 		
 	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR) g_error ("Error reading: %s\n", err->message);
-
+	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s\n", g_strerror(err));
+	if (ret == G_IO_STATUS_EOF) {
+		g_message("EOF (server disconnected)\n");
+		return FALSE; // shut down the callback, for now 
+	}
+	
+	
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
@@ -196,10 +202,10 @@ static void *start_aprsis_thread(void *ptr) {
 	
 	g_message("connecting to %s", ctx->host);
 	if (aprsis_connect(ctx)) {
-		printf("failed to connect, for some reason\n");
+		g_error("failed to connect");
 	}
 
-	g_message("logging in...\n");
+	g_message("logging in...");
 	aprsis_login(ctx);
 	aprsis_set_filter(ctx, 55, -4, 600);
 	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
@@ -207,8 +213,8 @@ static void *start_aprsis_thread(void *ptr) {
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
-    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_HUP, aprsis_got_packet, NULL))
-        g_error ("Cannot add watch on GIOChannel!\n");
+    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, NULL))
+        g_error ("Cannot add watch on GIOChannel!");
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
