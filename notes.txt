@@ -1,0 +1,27 @@
+------------------------------------------
+Read 57 bytes: M3FVX-9>UR4UT2,MB7UTG*,WIDE1,qAR,G3ZCV:`v3Xl )>/`"40}_"
+inserted station M3FVX-9
+
+------------------------------------------
+Read 108 bytes: G7FIA-9>GPSC75,WIDE1-1,WIDE2-2,qAS,MB7UBP:$GPRMC,194416.000,A,5123.0943,N,00019.9043,E,0.00,,240511,,,A*71
+no checksum in (GPRMC,194416.000,A,5123.0943,N,00019.9043,E,0.00,,240511,,,A*71
+)couldn't decode that...
+Invalid date in GPRMC sentence
+------------------------------------------
+Read 95 bytes: 2E1GJN-1>APU25N,TCPIP*,qAC,AHUBSWE2:=5200.44N/00044.81W#www.2e1gjn.com - DIGI & RX ONLY IGATE
+inserted station 2E1GJN-1
+
+------------------------------------------
+Read 80 bytes: G7FAL>APU25N,TCPIP*,qAC,AHUBSWE2:>241643zCOW-WAY WX @ WWW.COW-WAY.TALKTALK.NET
+
+
+
+------------------------------------------
+Read 128 bytes: G6UIM>APWW08,TCPIP*,qAC,T2HAM:;QRUG6UIM *195205h5024.51N\00333.82W?RNG0100?SRAIL(26) ?LIFEBOAT(238) ?HOSP(250) ?ARCLUB(4)!w>K!
+5c 3f
+inserted station G6UIM
+
+------------------------------------------
+Read 57 bytes: G6UIM>APWW08,TCPIP*,qAC,T2HAM::ANSRVR   :CQ DEERCAM{BR}
+already got station G6UIM
+
