@@ -163,8 +163,6 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	gchar *msg;
 	gsize len;
 
-	g_message("condition = %d\n", condition);
-
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
 		
@@ -174,7 +172,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
-		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
+		printf ("\n------------------------------------------\nRead %u bytes: %s", len, msg);
 		process_packet(msg);
 	}
 
