@@ -34,6 +34,7 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 
 int aprsis_connect(aprsis_ctx *ctx) {
 	// connect to an APRS-IS server
+	// return 0 on success
 	
 	struct addrinfo server;
 	gint err;
@@ -58,24 +59,28 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	char hostname[NI_MAXHOST] = "";
 
 	// loop down the list, and try to connect
-	do {
+	for (; res = res->ai_next; res != NULL) {
 		// get the name
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
 		if (err) {
-			g_error("error in getnameinfo: %s\n", gai_strerror(err));
+			g_error("error in getnameinfo: %s", gai_strerror(err));
 		}
-		g_message("trying hostname: %s %d %d\n", hostname, res->ai_socktype, res->ai_protocol);
 
 		// set up a socket, and attempt to connect
+		g_message("trying hostname: %s %d %d", hostname, res->ai_socktype, res->ai_protocol);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
-			g_message("can't connect - %s\n",strerror(errno));
-			res = res->ai_next;
+			g_message("can't connect - %s",strerror(errno));
 		}
-
-	} while (err);
+	};
 	free(res);
+	// FIXME make errors work properly, this is ugly
+	if (!err) {
+		return 0;
+	} else {
+		return -1;
+	}
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
@@ -164,11 +169,21 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	gsize len;
 
 	if (condition & G_IO_HUP)
-		g_error ("Read end of pipe died!\n");   // FIXME - handle this more gracefully
+		g_error ("Read end of pipe died!");   // FIXME - handle this more gracefully
+
+	if (condition & G_IO_ERR) {
+		g_message ("IO error");
+		return FALSE;
+	}
 		
 	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR) g_error ("Error reading: %s\n", err->message);
-
+	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s\n", g_strerror(err));
+	if (ret == G_IO_STATUS_EOF) {
+		g_message("EOF (server disconnected)\n");
+		return FALSE; // shut down the callback, for now 
+	}
+	
+	
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
@@ -186,11 +201,11 @@ static void *start_aprsis_thread(void *ptr) {
 	aprsis_ctx *ctx = ptr;
 	
 	g_message("connecting to %s", ctx->host);
-	if (!aprsis_connect(ctx)) {
-		printf("failed to connect, for some reason\n");
+	if (aprsis_connect(ctx)) {
+		g_error("failed to connect");
 	}
 
-	g_message("logging in...\n");
+	g_message("logging in...");
 	aprsis_login(ctx);
 	aprsis_set_filter(ctx, 55, -4, 600);
 	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
@@ -198,8 +213,8 @@ static void *start_aprsis_thread(void *ptr) {
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
-    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_HUP, aprsis_got_packet, NULL))
-        g_error ("Cannot add watch on GIOChannel!\n");
+    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, NULL))
+        g_error ("Cannot add watch on GIOChannel!");
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
