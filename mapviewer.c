@@ -38,8 +38,8 @@ GtkWidget *popup;
 GtkComboBox *server;
 
 GdkPixbuf *g_star_image = NULL;
-GdkPixbuf *g_symbol_image = NULL;
-GdkPixbuf *g_symbol_image2 = NULL;
+cairo_surface_t *g_symbol_image = NULL;
+cairo_surface_t *g_symbol_image2 = NULL;
 OsmGpsMapImage *g_last_image = NULL;
 
 GHashTable *stations;
@@ -179,27 +179,6 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	return FALSE;
 }
 
-/*static void
-on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
-{
-    gchar *s;
-    int tiles;
-    GtkLabel *label = GTK_LABEL(user_data);
-    g_object_get(image, "tiles-queued", &tiles, NULL);
-    s = g_strdup_printf("%d", tiles);
-    gtk_label_set_text(label, s);
-    g_free(s);
-}*/
-
-/* static void
-on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
-{
-    const char *propname = user_data;
-    float f = gtk_adjustment_get_value(adjustment);
-    if (g_last_image)
-        g_object_set (g_last_image, propname, f, NULL);
-} */
-
 static void
 on_close (GtkWidget *widget, gpointer user_data)
 {
@@ -319,8 +298,8 @@ main (int argc, char **argv)
 
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
-    g_symbol_image = gdk_pixbuf_new_from_file("allicons.png", &error);
-    g_symbol_image2 = gdk_pixbuf_new_from_file("allicon2.png", &error);
+    g_symbol_image = cairo_image_surface_create_from_png("allicons.png"); //, &error);
+    g_symbol_image2 = cairo_image_surface_create_from_png("allicon2.png"); //, &error);
     	
 	stations = g_hash_table_new(g_str_hash, g_str_equal);
 

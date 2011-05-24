@@ -80,7 +80,8 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 
 	guint width=64, height=20;
 
-	guint xo, yo, c;
+	gdouble xo, yo;
+	guint c;
 	GdkPixbuf *pix;
 	GdkPixbuf *symbol;
 	cairo_text_extents_t extent;
@@ -93,18 +94,25 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 	if (packet->symbol_table && packet->symbol_code) {
 		printf("Symbol: '%c%c'\n", packet->symbol_table, packet->symbol_code);
 
-	    c = packet->symbol_code-32;
-   		yo = (c*16)%256;
-   		xo = c &0xf0;			
-		if (packet->symbol_table == '\\') {
-   			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
-		} else {
-			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
-		}
 		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
-
 		cr = cairo_create(surface);
-	 cairo_set_source_rgba(cr, 1, 1, .75, 0.5);
+
+	    c = packet->symbol_code-32;
+   		yo = (gdouble)((c*16)%256);
+   		xo = (gdouble)(c &0xf0);
+		//if (packet->symbol_table == '\\') {
+   			//symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
+   		//	cairo_set_source_surface (cr, g_symbol_image2, xo, yo);
+
+		//} else {
+//			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
+printf("xo = %d, yo = %d\n", xo, yo);
+   			cairo_set_source_surface (cr, g_symbol_image, -xo, -yo);
+		//}
+			cairo_rectangle (cr, 0, 0, 16, 16);
+			cairo_fill (cr);
+		
+	 cairo_set_source_rgba(cr, 1, 1, 1, 0.5);
 	 cairo_rectangle(cr, 0, 0, 64, 16);
     cairo_clip(cr);
     	cairo_paint(cr);
