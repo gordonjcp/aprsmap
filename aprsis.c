@@ -34,6 +34,7 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 
 int aprsis_connect(aprsis_ctx *ctx) {
 	// connect to an APRS-IS server
+	// return 0 on success
 	
 	struct addrinfo server;
 	gint err;
@@ -58,24 +59,30 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	char hostname[NI_MAXHOST] = "";
 
 	// loop down the list, and try to connect
-	do {
+	for (; res = res->ai_next; res != NULL) {
 		// get the name
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
 		if (err) {
-			g_error("error in getnameinfo: %s\n", gai_strerror(err));
+			g_error("error in getnameinfo: %s", gai_strerror(err));
 		}
-		g_message("trying hostname: %s %d %d\n", hostname, res->ai_socktype, res->ai_protocol);
 
 		// set up a socket, and attempt to connect
+		g_message("trying hostname: %s %d %d", hostname, res->ai_socktype, res->ai_protocol);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err < 0) {
-			g_message("can't connect - %s\n",strerror(errno));
-			res = res->ai_next;
+			g_message("can't connect - %s",strerror(errno));
 		}
-
-	} while (err);
+		printf("err is %d\n", err);
+	};
 	free(res);
+	// FIXME make errors work properly, this is ugly
+	printf("ctx->sockfx = %d\n", ctx->sockfd);
+	if (!err) {
+		return 0;
+	} else {
+		return -1;
+	}
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
@@ -188,7 +195,7 @@ static void *start_aprsis_thread(void *ptr) {
 	aprsis_ctx *ctx = ptr;
 	
 	g_message("connecting to %s", ctx->host);
-	if (!aprsis_connect(ctx)) {
+	if (aprsis_connect(ctx)) {
 		printf("failed to connect, for some reason\n");
 	}
 
