@@ -11,6 +11,7 @@ typedef struct {
 	gchar *callsign;
 	char symbol[2];
 	OsmGpsMapImage *image;
+	OsmGpsMapTrack *track;
 	GdkPixbuf *pix;
 	double lat;
 	double lon;

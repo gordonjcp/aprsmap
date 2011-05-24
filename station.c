@@ -104,12 +104,13 @@ gboolean process_packet(gchar *msg) {
 		printf("already got station %s\n", station->callsign);
 		if (aprsmap_station_moved(packet, station)) {
 			printf("it's moved\n");
+			if (station->image) {
+				osm_gps_map_image_remove(map, station->image);
+				station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 			
+			}
 		} else printf("it hasn't moved\n");
 		
-		if (station->image) {
-			//osm_gps_map_image_remove(map, station->image);
-			//station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 			
-		}
+
 	
 	}
 	
