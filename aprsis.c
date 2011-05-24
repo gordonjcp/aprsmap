@@ -177,7 +177,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	}
 		
 	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s\n", g_strerror(err));
+	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s\n", err->message);
 	if (ret == G_IO_STATUS_EOF) {
 		g_message("EOF (server disconnected)\n");
 		return FALSE; // shut down the callback, for now 
