@@ -219,6 +219,7 @@ main (int argc, char **argv)
 	GIOChannel *gio_read;
 
 	aprsis_ctx *ctx = aprsis_new("rotate.aprs2.net", "14580", "aprsmap", "-1");
+	//aprsis_ctx *ctx = aprsis_new("spain.aprs2.net", "14580", "aprsmap", "-1");
 	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
 
 	//set variables properties->lat, properties->lon, properties->range, properties->ctx

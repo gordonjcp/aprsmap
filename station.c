@@ -8,8 +8,8 @@
 #include "station.h"
 
 extern GdkPixbuf *g_star_image;
-extern GdkPixbuf *g_symbol_image;
-extern GdkPixbuf *g_symbol_image2;
+extern cairo_surface_t *g_symbol_image;
+extern cairo_surface_t *g_symbol_image2;
 
 extern GHashTable *stations;
 extern OsmGpsMap *map;
@@ -78,7 +78,7 @@ convert_alpha (guchar *dest_data,
 static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 	// return the symbol pixbuf
 
-	guint width=64, height=20;
+	guint width=72, height=18;
 
 	gdouble xo, yo;
 	guint c;
@@ -97,28 +97,32 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
 		cr = cairo_create(surface);
 
+		// draw background
+		cairo_set_source_rgba(cr, 1, 1, 1, .5);
+		//cairo_rectangle(cr, 18 , 0, width-18, height);
+		//cairo_clip(cr);
+		cairo_rectangle(cr, 0, 0, width, height);
+		cairo_clip(cr);
+		cairo_paint(cr);
+		
+		
 	    c = packet->symbol_code-32;
    		yo = (gdouble)((c*16)%256);
    		xo = (gdouble)(c &0xf0);
-		//if (packet->symbol_table == '\\') {
+		if (packet->symbol_table == '\\') {
    			//symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
-   		//	cairo_set_source_surface (cr, g_symbol_image2, xo, yo);
+   			cairo_set_source_surface (cr, g_symbol_image2, 1-xo, 1-yo);
 
-		//} else {
+		} else {
 //			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
-printf("xo = %d, yo = %d\n", xo, yo);
-   			cairo_set_source_surface (cr, g_symbol_image, -xo, -yo);
-		//}
-			cairo_rectangle (cr, 0, 0, 16, 16);
-			cairo_fill (cr);
-		
-	 cairo_set_source_rgba(cr, 1, 1, 1, 0.5);
-	 cairo_rectangle(cr, 0, 0, 64, 16);
-    cairo_clip(cr);
-    	cairo_paint(cr);
+   			cairo_set_source_surface (cr, g_symbol_image, 1-xo, 1-yo);
+		}
+		cairo_rectangle (cr, 1, 1, 16, 16);
+		cairo_fill (cr);
+
     	cairo_set_font_size(cr, 10);
-    	cairo_move_to(cr, 20, 12);
-    	cairo_set_source_rgba(cr, 0, 0, 0, 1); // red for cursor
+    	cairo_move_to(cr, 20, 13);
+    	cairo_set_source_rgba(cr, 0, 0, 0, 1);
     	cairo_show_text(cr,packet->src_callsign);
     	
     	
@@ -176,7 +180,8 @@ gboolean process_packet(gchar *msg) {
 		station->callsign = g_strdup(packet->src_callsign);
 		station->pix = aprsmap_get_symbol(packet);
 		if (station->pix) {
-	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 			
+	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
+			g_object_set (station->image, "x-align", 0.0f, NULL); 						
 		}
 		if (packet->latitude) {
 			// can't see why it would have lat but not lon, probably a horrible bug in the waiting
@@ -192,7 +197,8 @@ gboolean process_packet(gchar *msg) {
 			printf("it's moved\n");
 			if (station->image) {
 				osm_gps_map_image_remove(map, station->image);
-				station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 			
+				station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
+				g_object_set (station->image, "x-align", 0.0f, NULL); 			
 			}
 		} else printf("it hasn't moved\n");
 		
