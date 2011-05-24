@@ -14,11 +14,12 @@
 #include <errno.h>
 
 #include "aprsis.h"
+#include "station.h"
 #include "mapviewer.h"
 
 static gboolean reconnect;
 static guint aprs1;
-GIOChannel *aprsis_io;
+static GIOChannel *aprsis_io;
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
@@ -187,7 +188,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
-		printf ("\n------------------------------------------\nRead %u bytes: %s\n", len, msg);
+		printf ("\n------------------------------------------\nRead %u bytes: %s", len, msg);
 		process_packet(msg);
 	}
 

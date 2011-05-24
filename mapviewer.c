@@ -28,6 +28,7 @@
 #include <osm-gps-map.h>
 
 #include "aprsis.h"
+#include "station.h"
 
 OsmGpsMap *map;
 GtkEntry *latent;
@@ -35,6 +36,13 @@ GtkEntry *lonent;
 GtkEntry *rangeent;
 GtkWidget *popup;
 GtkComboBox *server;
+
+GdkPixbuf *g_star_image = NULL;
+cairo_surface_t *g_symbol_image = NULL;
+cairo_surface_t *g_symbol_image2 = NULL;
+OsmGpsMapImage *g_last_image = NULL;
+
+GHashTable *stations;
 
 //aprs details structure - enables passing of variables between the properties pop up and the main program
 
@@ -77,87 +85,8 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
-static GdkPixbuf *g_star_image = NULL;
-static GdkPixbuf *g_symbol1_image = NULL;
-static GdkPixbuf *g_symbol_image = NULL;
-static GdkPixbuf *g_symbol_image2 = NULL;
-static GdkPixbuf *g_wx_image = NULL;
-static GdkPixbuf *g_house_image = NULL;
-static GdkPixbuf *g_digi_image = NULL;
-static OsmGpsMapImage *g_last_image = NULL;
 
-typedef struct {
-	gchar *callsign;
-	char symbol[2];
-	OsmGpsMapImage *image;
-	GdkPixbuf *pix;
-} APRSMapStation;
 
-GHashTable *stations;
-
-gboolean process_packet(gchar *msg) {
-
-	fap_packet_t *packet;
-	GError *error = NULL;
-	char errmsg[256]; // ugh
-	char symb[3];
-	char tab[2];
-	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
-	char *table[] = {"!","#","$","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","}","&","0","1","2","3","4","5","6","7","8","9",NULL};
-	char** s = table;
-
-	packet = fap_parseaprs(msg, strlen(msg), 0);
-	if (packet->error_code) {
-		printf("couldn't decode that...\n");
-		fap_explain_error(*packet->error_code, errmsg);
-		printf("%s", errmsg);
-	} else if (packet->src_callsign) {
-                printf("Got packet from %s (%d bytes)\n", packet->src_callsign, strlen(packet->src_callsign));
-	}
-		//Take symbol, fire it into char array and hopefully we can use symbols in
-		//identifying stations
-		snprintf(symb,sizeof(symb),"%c",packet->symbol_code);
-		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
-		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
- 
-	if (packet->latitude) {
-		//print lat/lon value
-		
-		
-		
-        APRSMapStation *station = g_hash_table_lookup(stations, packet->src_callsign);
-        guint xo, yo, c;
-        if (!station) {
-    		c = packet->symbol_code-32;
-    		
-    		yo = (c*16)%256;
-    		xo = c &0xf0;
-    		station = g_new0(APRSMapStation, 1);
-    		station->callsign = g_strdup(packet->src_callsign);
-    		if (packet->symbol_table == "\\") {
-	    		station->pix = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
-	    	} else {
-	    		station->pix = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
-	    	}
-
-			station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);   		
-    		g_hash_table_insert(stations, packet->src_callsign, station);
-
-    	} else {
-    		printf("already got %s\n", station->callsign);
-    		
-    	}
-		
-		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-
-    } else {
-		printf("has no position information\n");
-	}
-
-	fap_free(packet);
-	
-	return TRUE;
-}
 static gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
@@ -249,27 +178,6 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
-
-/*static void
-on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
-{
-    gchar *s;
-    int tiles;
-    GtkLabel *label = GTK_LABEL(user_data);
-    g_object_get(image, "tiles-queued", &tiles, NULL);
-    s = g_strdup_printf("%d", tiles);
-    gtk_label_set_text(label, s);
-    g_free(s);
-}*/
-
-/* static void
-on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
-{
-    const char *propname = user_data;
-    float f = gtk_adjustment_get_value(adjustment);
-    if (g_last_image)
-        g_object_set (g_last_image, propname, f, NULL);
-} */
 
 static void
 on_close (GtkWidget *widget, gpointer user_data)
@@ -390,14 +298,10 @@ main (int argc, char **argv)
 
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
-    g_symbol1_image = gdk_pixbuf_new_from_file("campervan.png", &error);
-	g_wx_image = gdk_pixbuf_new_from_file("wx.gif", &error);
-	g_house_image = gdk_pixbuf_new_from_file("house.GIF", &error);
-	g_digi_image = gdk_pixbuf_new_from_file("digi.GIF", &error);
-    g_symbol_image = gdk_pixbuf_new_from_file("allicons.png", &error);
-    g_symbol_image2 = gdk_pixbuf_new_from_file("allicon2.png", &error);
+    g_symbol_image = cairo_image_surface_create_from_png("allicons.png"); //, &error);
+    g_symbol_image2 = cairo_image_surface_create_from_png("allicon2.png"); //, &error);
     	
-	stations = g_hash_table_new(g_int_hash, g_int_equal);
+	stations = g_hash_table_new(g_str_hash, g_str_equal);
 
 
     builder = gtk_builder_new();
