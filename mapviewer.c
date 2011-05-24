@@ -30,13 +30,37 @@
 #include "aprsis.h"
 
 OsmGpsMap *map;
-
-GtkWidget *popup;
 GtkEntry *latent;
 GtkEntry *lonent;
+GtkEntry *rangeent;
+GtkWidget *popup;
+GtkComboBox *server;
 
-double homelat = 55.0;
-double homelon = -4.0;
+//aprs details structure - enables passing of variables between the properties pop up and the main program
+
+typedef struct _aprs_details{
+
+double lat;
+double lon;
+int range;
+aprsis_ctx *ctx;
+
+} aprs_details;
+
+aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
+
+//function that lets us define the values in the aprs_details
+aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx)	{
+
+aprs_details *details = calloc(1, sizeof(aprs_details));
+
+	details->lat = lat;
+	details->lon = lon;
+	details->range = range;
+	details->ctx = ctx;
+
+return details;
+}
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -180,7 +204,8 @@ static gboolean
 on_home_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    osm_gps_map_set_center_and_zoom(map,homelat,homelon,5);
+	//change this bitch up
+    osm_gps_map_set_center_and_zoom(map,55.00,-4.0,5);
     return FALSE;
 }
 static gboolean
@@ -190,8 +215,31 @@ on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
 	return FALSE;
 }
 static gboolean
-on_properties_ok_clicked (GtkWidget *widget, gpointer user_data)
+on_properties_ok_clicked (GtkWidget *widget, aprs_details *properties)
 {
+	double oldlat = properties->lat;
+	double oldlon = properties->lon;   
+	printf("We were: %f%f\n",oldlat,oldlon);
+	properties->lat=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(latent)),NULL);
+	properties->lon=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(lonent)), NULL);
+	properties->range=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(rangeent)), NULL); 
+	printf("We are: %f%f\n",properties->lat,properties->lon);  
+	//Check Latitude/Longitude entries are correct
+	if(properties->lat > 89.9 || properties->lat < -89.9) {
+	//printf("Invalid Lat\n");
+	double homelat = oldlat; 
+	//printf("New Lat:%f\n", homelat);
+	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
+	}
+	if(properties->lon > 180 || properties->lon < -180) {
+	//printf("Invalid Lon\n");
+	double homelon = oldlon; 
+	//printf("New Lon:%f\n", homelon);
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
+	}
+	//centre map on new coordinates after widget closed
+	osm_gps_map_set_center_and_zoom(map,properties->lat, properties->lon, 5);
+	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
@@ -253,8 +301,8 @@ main (int argc, char **argv)
 {
     GtkBuilder *builder;
     GtkWidget *widget;
-	
     GtkAccelGroup *ag;
+
     OsmGpsMapLayer *osd;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
@@ -263,6 +311,11 @@ main (int argc, char **argv)
 	GIOChannel *gio_read;
 
 	aprsis_ctx *ctx = aprsis_new("rotate.aprs2.net", "14580", "aprsmap", "-1");
+
+	//set variables properties->lat, properties->lon, properties->range, properties->ctx
+	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
+
+	//aprsis_set_filter(properties->ctx,55.00,-4.50,300);   
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
@@ -356,7 +409,7 @@ main (int argc, char **argv)
                 GTK_WIDGET(map), TRUE, TRUE, 0);
   
     // centre on UK, because I'm UK-centric
-    osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
+    osm_gps_map_set_center_and_zoom(map, 55.00,-4.00, 5);
 
     //Connect to signals
     g_signal_connect (
@@ -379,7 +432,7 @@ main (int argc, char **argv)
 				G_CALLBACK (on_properties_hide_event), (gpointer) map);
 	g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
-				G_CALLBACK (on_properties_ok_clicked), (gpointer) map);
+				G_CALLBACK (on_properties_ok_clicked), properties);
     g_signal_connect (G_OBJECT (map), "button-release-event",
                 G_CALLBACK (on_button_release_event),
                 (gpointer) gtk_builder_get_object(builder, "text_entry"));
@@ -409,10 +462,10 @@ main (int argc, char **argv)
 	//Set up GTK_ENTRY boxes in the preferences pop up
 	latent = GTK_ENTRY(gtk_builder_get_object(builder, "declat"));
 	lonent = GTK_ENTRY(gtk_builder_get_object(builder, "declon"));
-	gchar *latmsg = g_strdup_printf("%f",homelat);
-	gchar *lonmsg = g_strdup_printf("%f",homelon);
-	gtk_entry_set_text(latent, latmsg);
-	gtk_entry_set_text(lonent, lonmsg);
+	rangeent = GTK_ENTRY(gtk_builder_get_object(builder, "range"));
+	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
+	gtk_entry_set_text(rangeent, g_strdup_printf("%d",properties->range));
 
 	g_object_unref( G_OBJECT( builder ) );
 
