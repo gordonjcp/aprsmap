@@ -14,11 +14,12 @@
 #include <errno.h>
 
 #include "aprsis.h"
+#include "station.h"
 #include "mapviewer.h"
 
 static gboolean reconnect;
 static guint aprs1;
-GIOChannel *aprsis_io;
+static GIOChannel *aprsis_io;
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
