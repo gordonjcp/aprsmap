@@ -28,15 +28,47 @@
 #include <osm-gps-map.h>
 
 #include "aprsis.h"
+#include "station.h"
 
 OsmGpsMap *map;
-
-GtkWidget *popup;
 GtkEntry *latent;
 GtkEntry *lonent;
+GtkEntry *rangeent;
+GtkWidget *popup;
+GtkComboBox *server;
 
-double homelat = 55.0;
-double homelon = -4.0;
+GdkPixbuf *g_star_image = NULL;
+cairo_surface_t *g_symbol_image = NULL;
+cairo_surface_t *g_symbol_image2 = NULL;
+OsmGpsMapImage *g_last_image = NULL;
+
+GHashTable *stations;
+
+//aprs details structure - enables passing of variables between the properties pop up and the main program
+
+typedef struct _aprs_details{
+
+double lat;
+double lon;
+int range;
+aprsis_ctx *ctx;
+
+} aprs_details;
+
+aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
+
+//function that lets us define the values in the aprs_details
+aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx)	{
+
+aprs_details *details = calloc(1, sizeof(aprs_details));
+
+	details->lat = lat;
+	details->lon = lon;
+	details->range = range;
+	details->ctx = ctx;
+
+return details;
+}
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
 static gboolean opt_friendly_cache = FALSE;
@@ -53,115 +85,8 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
-static GdkPixbuf *g_star_image = NULL;
-static GdkPixbuf *g_symbol1_image = NULL;
-static GdkPixbuf *g_symbol2_image = NULL;
-static GdkPixbuf *g_wx_image = NULL;
-static GdkPixbuf *g_house_image = NULL;
-static GdkPixbuf *g_digi_image = NULL;
-static OsmGpsMapImage *g_last_image = NULL;
-
-gboolean process_packet(gchar *msg) {
-
-	fap_packet_t *packet;
-	char errmsg[256]; // ugh
-	char symb[3];
-	char tab[2];
-	//An array of all symbols in the primary table- no numeral circles, "TBD" or secondaries implemented currently - taken from http://www.aprs.net/vm/DOS/SYMBOLS.HTM 
-	char *table[] = {"!","#","$","%","(","*","+",",","-",".","/",":","<","=",">","?","@","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","R","S","T","U","W","X","Y","Z","[","\\","]","^","_","`","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","{","}","&","0","1","2","3","4","5","6","7","8","9",NULL};
-	char** s = table;
-
-	packet = fap_parseaprs(msg, strlen(msg), 0);
-	if (packet->error_code) {
-		printf("couldn't decode that...\n");
-		fap_explain_error(*packet->error_code, errmsg);
-		printf("%s", errmsg);
-	} else if (packet->src_callsign) {
-                printf("Got packet from %s\n", packet->src_callsign);
-	}
-		//Take symbol, fire it into char array and hopefully we can use symbols in
-		//identifying stations
-		snprintf(symb,sizeof(symb),"%c",packet->symbol_code);
-		snprintf(tab,sizeof(tab),"%c",packet->symbol_table);
-		printf("Symbol Code: %c%c\n", packet->symbol_table,packet->symbol_code);
- 
-	if (packet->latitude) {
-		//print lat/lon value
-		printf("%f %f\n", *(packet->latitude), *(packet->longitude));
-
-				//First, create a comparison flag.
-		int comp_flag=0;
-		//for loop integer value
-		int n;
-		for (n=0;n<87;n++){
-			if (strcmp(symb,*s) == 0) {
-				//debug ~ print what we think it is
-				printf("Debug Data: %s ",*s);
-				comp_flag = n;
-				//debug, print comparison_flag value beside symbol
-				printf("%i\n",comp_flag);
-				//break out of for loop.
-				n=87;
-				} else if (strcmp(symb, *s) !=0) 
-				{ ++s; }
-		}
-
-		//check if it is a symbol from the primary table
-		if 	(strcmp(tab,"/") == 0) {
-
-		//In this section we use a switch statement to check a packet's symbol code and print the data/plop the image.
 
 
-		//compare switch case, perform action based on station type. Could well split this into a new file?
-		switch (comp_flag) {
-			case 1:
-			printf("Digipeater Station");
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_digi_image);
-			break;
-
-			case 9:
-			printf("Home QTH"); 
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_house_image);
-			break;
-			case 15:
-			if (packet->course != NULL) {
-				printf("Course: %d\n", *(packet->course));
-			}
-
-			if (packet->speed != NULL) {
-				printf("Speed: %fkm/h\n", *(packet->speed));
-			}
-
-			printf("Mobile Rig");
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_symbol1_image);
-					break;
-		case 45:
-					osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_wx_image);
-					printf("WX Station"); 
-					
-					break;
-		
-		default:
-			osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-		break;
-			}
-
-} else if (strcmp(tab,"\\") == 0) {
-	osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-	printf("Is Secondary (parse code to be added soon)");
-
-} else { 
-		osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), g_star_image);
-		printf("This labelset is currently not supported by aprsmap");
-}
-    } else {
-		printf("has no position information\n");
-	}
-
-	fap_free(packet);
-	
-	return TRUE;
-}
 static gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
@@ -208,7 +133,8 @@ static gboolean
 on_home_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    osm_gps_map_set_center_and_zoom(map,homelat,homelon,5);
+	//change this bitch up
+    osm_gps_map_set_center_and_zoom(map,55.00,-4.0,5);
     return FALSE;
 }
 static gboolean
@@ -218,8 +144,31 @@ on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
 	return FALSE;
 }
 static gboolean
-on_properties_ok_clicked (GtkWidget *widget, gpointer user_data)
+on_properties_ok_clicked (GtkWidget *widget, aprs_details *properties)
 {
+	double oldlat = properties->lat;
+	double oldlon = properties->lon;   
+	printf("We were: %f%f\n",oldlat,oldlon);
+	properties->lat=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(latent)),NULL);
+	properties->lon=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(lonent)), NULL);
+	properties->range=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(rangeent)), NULL); 
+	printf("We are: %f%f\n",properties->lat,properties->lon);  
+	//Check Latitude/Longitude entries are correct
+	if(properties->lat > 89.9 || properties->lat < -89.9) {
+	//printf("Invalid Lat\n");
+	double homelat = oldlat; 
+	//printf("New Lat:%f\n", homelat);
+	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
+	}
+	if(properties->lon > 180 || properties->lon < -180) {
+	//printf("Invalid Lon\n");
+	double homelon = oldlon; 
+	//printf("New Lon:%f\n", homelon);
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
+	}
+	//centre map on new coordinates after widget closed
+	osm_gps_map_set_center_and_zoom(map,properties->lat, properties->lon, 5);
+	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
@@ -229,27 +178,6 @@ on_properties_hide_event (GtkWidget *widget, gpointer user_data)
 	gtk_widget_hide(	GTK_WIDGET( popup ) );
 	return FALSE;
 }
-
-/*static void
-on_tiles_queued_changed (OsmGpsMap *image, GParamSpec *pspec, gpointer user_data)
-{
-    gchar *s;
-    int tiles;
-    GtkLabel *label = GTK_LABEL(user_data);
-    g_object_get(image, "tiles-queued", &tiles, NULL);
-    s = g_strdup_printf("%d", tiles);
-    gtk_label_set_text(label, s);
-    g_free(s);
-}*/
-
-/* static void
-on_star_align_changed (GtkAdjustment *adjustment, gpointer user_data)
-{
-    const char *propname = user_data;
-    float f = gtk_adjustment_get_value(adjustment);
-    if (g_last_image)
-        g_object_set (g_last_image, propname, f, NULL);
-} */
 
 static void
 on_close (GtkWidget *widget, gpointer user_data)
@@ -281,8 +209,8 @@ main (int argc, char **argv)
 {
     GtkBuilder *builder;
     GtkWidget *widget;
-	
     GtkAccelGroup *ag;
+
     OsmGpsMapLayer *osd;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
@@ -290,7 +218,13 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	aprsis_ctx *ctx = aprsis_new("rotate.aprs2.net", "14580", "aprsmap", "-1");
+	aprsis_ctx *ctx = aprsis_new("euro.aprs2.net", "14580", "aprsmap", "-1");
+	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
+	
+	//set variables properties->lat, properties->lon, properties->range, properties->ctx
+	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
+
+	//aprsis_set_filter(properties->ctx,55.00,-4.50,300);   
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
@@ -364,11 +298,11 @@ main (int argc, char **argv)
 
     //Build the UI
     g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
-    g_symbol1_image = gdk_pixbuf_new_from_file("campervan.png", &error);
-	g_wx_image = gdk_pixbuf_new_from_file("wx.gif", &error);
-	g_house_image = gdk_pixbuf_new_from_file("house.GIF", &error);
-	g_digi_image = gdk_pixbuf_new_from_file("digi.GIF", &error);
-    //g_symbol2_image = gdk_pixbuf_new_from_file("allicon2.png", &error);
+    g_symbol_image = cairo_image_surface_create_from_png("allicons.png"); //, &error);
+    g_symbol_image2 = cairo_image_surface_create_from_png("allicon2.png"); //, &error);
+    	
+	stations = g_hash_table_new(g_str_hash, g_str_equal);
+
 
     builder = gtk_builder_new();
     gtk_builder_add_from_file (builder, "mapviewer.ui", &error);
@@ -380,7 +314,7 @@ main (int argc, char **argv)
                 GTK_WIDGET(map), TRUE, TRUE, 0);
   
     // centre on UK, because I'm UK-centric
-    osm_gps_map_set_center_and_zoom(map, homelat, homelon, 5);
+    osm_gps_map_set_center_and_zoom(map, 55.00,-4.00, 5);
 
     //Connect to signals
     g_signal_connect (
@@ -403,7 +337,7 @@ main (int argc, char **argv)
 				G_CALLBACK (on_properties_hide_event), (gpointer) map);
 	g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
-				G_CALLBACK (on_properties_ok_clicked), (gpointer) map);
+				G_CALLBACK (on_properties_ok_clicked), properties);
     g_signal_connect (G_OBJECT (map), "button-release-event",
                 G_CALLBACK (on_button_release_event),
                 (gpointer) gtk_builder_get_object(builder, "text_entry"));
@@ -433,10 +367,10 @@ main (int argc, char **argv)
 	//Set up GTK_ENTRY boxes in the preferences pop up
 	latent = GTK_ENTRY(gtk_builder_get_object(builder, "declat"));
 	lonent = GTK_ENTRY(gtk_builder_get_object(builder, "declon"));
-	gchar *latmsg = g_strdup_printf("%f",homelat);
-	gchar *lonmsg = g_strdup_printf("%f",homelon);
-	gtk_entry_set_text(latent, latmsg);
-	gtk_entry_set_text(lonent, lonmsg);
+	rangeent = GTK_ENTRY(gtk_builder_get_object(builder, "range"));
+	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
+	gtk_entry_set_text(rangeent, g_strdup_printf("%d",properties->range));
 
 	g_object_unref( G_OBJECT( builder ) );
 
