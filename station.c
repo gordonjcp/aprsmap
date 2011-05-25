@@ -78,7 +78,7 @@ convert_alpha (guchar *dest_data,
 static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
 	// return the symbol pixbuf
 
-	guint width=72, height=18;
+	guint width=80, height=18;
 
 	gdouble xo, yo;
 	guint c;
@@ -160,6 +160,7 @@ gboolean process_packet(gchar *msg) {
 
 	fap_packet_t *packet;
 	APRSMapStation *station;
+	OsmGpsMapPoint pt;
 
 	char errmsg[256]; // ugh
 	packet = fap_parseaprs(msg, strlen(msg), 0);
@@ -200,6 +201,16 @@ gboolean process_packet(gchar *msg) {
 				station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
 				g_object_set (station->image, "x-align", 0.0f, NULL); 			
 			}
+			if (!station->track) {
+				station->track = osm_gps_map_track_new();
+				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
+				osm_gps_map_track_add_point(station->track, &pt);
+			    osm_gps_map_track_add(OSM_GPS_MAP(map), station->track);
+			}
+			station->lat = *(packet->latitude);
+			station->lon = *(packet->longitude);
+			osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
+			osm_gps_map_track_add_point(station->track, &pt);
 		} else printf("it hasn't moved\n");
 		
 
