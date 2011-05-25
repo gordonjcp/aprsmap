@@ -82,24 +82,27 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
+		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
 
 		// set up a socket, and attempt to connect
-		g_message("got hostname: %s %d %d %d", hostname, res->ai_family, res->ai_socktype, res->ai_protocol);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err != 0) {
-			g_message("can't connect to %s (%s) %s - %s",hostname, ipstr, ipver, strerror(errno));
+			g_message("can't connect to %s - %s",hostname, strerror(errno));
 			continue;
 		}
 		break;
 	};
 	freeaddrinfo(res);
 	// FIXME make errors work properly, this is ugly
+	
+	/* No idea if this is the right thing to do, but here goes...
 	if (!err) {
 		return 0;
 	} else {
 		return -1;
-	}
+	} */
+	return (err);
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
