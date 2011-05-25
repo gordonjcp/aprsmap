@@ -48,7 +48,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
+	//hints.ai_protocol = IPPROTO_TCP;
 
 	char ipstr[INET6_ADDRSTRLEN];
 
@@ -67,6 +67,10 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		void *addr;
 		void *ipver;
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
+		if (err != 0) {
+			g_error("error in getnameinfo: %s", gai_strerror(err));
+			continue;
+		}
 		// MOAR DEBUG
 		if (res->ai_family == AF_INET) {
 		    struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
@@ -78,10 +82,6 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
-		if (err != 0) {
-			g_error("error in getnameinfo: %s", gai_strerror(err));
-			continue;
-		}
 
 		// set up a socket, and attempt to connect
 		g_message("got hostname: %s %d %d %d", hostname, res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -89,7 +89,9 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
 		if (err != 0) {
 			g_message("can't connect to %s (%s) %s - %s",hostname, ipstr, ipver, strerror(errno));
+			continue;
 		}
+		break;
 	};
 	freeaddrinfo(res);
 	// FIXME make errors work properly, this is ugly

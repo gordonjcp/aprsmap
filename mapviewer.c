@@ -218,8 +218,7 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	//aprsis_ctx *ctx = aprsis_new("spain2.aprs2.net", "14580", "aprsmap", "-1");
-	aprsis_ctx *ctx = aprsis_new("euro.aprs2.net", "14580", "aprsmap", "-1");
+	aprsis_ctx *ctx = aprsis_new("france.aprs2.net", "14580", "aprsmap", "-1");
 	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
 	
 	//set variables properties->lat, properties->lon, properties->range, properties->ctx
