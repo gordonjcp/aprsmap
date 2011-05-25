@@ -53,26 +53,27 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	// get a list of addresses
 	err = getaddrinfo(ctx->host, ctx->port, &hints, &res);
 	if (err != 0)   {
-		g_error("error in getaddrinfo: %s\n", gai_strerror(err));
+		g_error("error in getaddrinfo: %s", gai_strerror(err));
 		return 1;
 	} 
 
-	char hostname[NI_MAXHOST] = "";
 
 	// loop down the list, and try to connect
-	for (; res = res->ai_next; res != NULL) {
+	for (; res != NULL ; res = res->ai_next) {
 		// get the name
+	    char hostname[NI_MAXHOST] = "";
 		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
-		if (err) {
+		if (err != 0) {
 			g_error("error in getnameinfo: %s", gai_strerror(err));
+			continue;
 		}
 
 		// set up a socket, and attempt to connect
-		g_message("trying hostname: %s %d %d", hostname, res->ai_socktype, res->ai_protocol);
+		g_message("got hostname: %s %d %d %d", hostname, res->ai_family, res->ai_socktype, res->ai_protocol);
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
-		if (err < 0) {
-			g_message("can't connect - %s",strerror(errno));
+		if (err != 0) {
+			g_message("can't connect to %s - %s",hostname, strerror(errno));
 		}
 	};
 	free(res);
@@ -95,16 +96,16 @@ int aprsis_login(aprsis_ctx *ctx) {
 	if (n<0) {
 		error("couldn't read from socket");
 	}
-	g_message("got\t%s",buf);
+	g_message("got: %s",buf);
 
 	sprintf(buf, APRSIS_LOGIN"\n", ctx->user, ctx->pass);
-	g_message("sending\t%s", buf);
+	g_message("sending: %s", buf);
 	write(ctx->sockfd, buf, strlen(buf));
 	n = read(ctx->sockfd, buf, 256);
 	if (n<0) {
-		error("couldn't read from socket");
+		g_error("couldn't read from socket");
 	}
-	g_message("got\t%s",buf);
+	g_message("got: %s",buf);
 	
 	return 0;
 }
@@ -178,9 +179,9 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	}
 		
 	ret = g_io_channel_read_line (gio, &msg, &len, NULL, &err);
-	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s\n", err->message);
+	if (ret == G_IO_STATUS_ERROR)  g_message("Error reading: %s", err->message);
 	if (ret == G_IO_STATUS_EOF) {
-		g_message("EOF (server disconnected)\n");
+		g_message("EOF (server disconnected)");
 		return FALSE; // shut down the callback, for now 
 	}
 	
