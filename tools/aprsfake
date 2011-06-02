@@ -28,5 +28,5 @@ f = open(FILE)
 while 1:
     for l in f:
         client.send(l)
-        time.sleep(random.randint(1, 10))
+        time.sleep(1) #random.randint(1, 10))
     
