@@ -297,7 +297,6 @@ main (int argc, char **argv)
     osm_gps_map_set_keyboard_shortcut(map, OSM_GPS_MAP_KEY_RIGHT, GDK_Right);
 
     //Build the UI
-    g_star_image = gdk_pixbuf_new_from_file_at_size ("poi.png", 24,24,NULL);
     g_symbol_image = cairo_image_surface_create_from_png("allicons.png"); //, &error);
     g_symbol_image2 = cairo_image_surface_create_from_png("allicon2.png"); //, &error);
     	

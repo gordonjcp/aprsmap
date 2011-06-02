@@ -150,9 +150,19 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 
 static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *station) {
 	// has the station moved?
+	
+	float lat, lon;
 	if (!packet->latitude) return FALSE; // don't know if it's moved; nothing to tell us it has
+	if (!station->point) return TRUE;   // oo-er, not sure - must check that we call this only if the station has a point
+	/*
+	lat = *(packet->latitude);
+	lon = *(packet->longitude);
 	if (*(packet->latitude) != station->lat) return TRUE;
 	if (*(packet->longitude) != station->lon) return TRUE;
+	*/
+	osm_gps_map_point_get_degrees (station->point, &lat, &lon);
+	if (*(packet->latitude) != lat) return TRUE;
+	if (*(packet->longitude) != lon) return TRUE;
 	return FALSE;
 }
 
@@ -182,10 +192,10 @@ gboolean process_packet(gchar *msg) {
 	switch (*(packet->type)) {
 		case fapOBJECT:
 		case fapITEM:
-			strncpy(&name, packet->object_or_item_name, 9);
+			strncpy(name, packet->object_or_item_name, 9);
 			break;
 		default:
-			strncpy(&name, packet->src_callsign, 9);
+			strncpy(name, packet->src_callsign, 9);
 		break;
 	}
 	printf("name is %s\n",name);
@@ -196,15 +206,16 @@ gboolean process_packet(gchar *msg) {
 	if (!station) { // no, create a new one
 		station = g_new0(APRSMapStation, 1);
 		station->callsign = g_strdup(name);
-		station->pix = aprsmap_get_symbol(packet, &name);
+		station->pix = aprsmap_get_symbol(packet, name);
 		if (station->pix) {
 	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
 			g_object_set (station->image, "x-align", 0.0f, NULL); 						
 		}
 		if (packet->latitude) {
 			// can't see why it would have lat but not lon, probably a horrible bug in the waiting
-			station->lat = *(packet->latitude);
-			station->lon = *(packet->longitude);		
+			station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));
+			//station->lat = *(packet->latitude);
+			//station->lon = *(packet->longitude);		
 		}
 
 		g_hash_table_insert(stations, station->callsign, station);
@@ -214,21 +225,27 @@ gboolean process_packet(gchar *msg) {
 		if (aprsmap_station_moved(packet, station)) {
 			// fixme - determine if it really *has* moved, or if it's moved from 0,0
 			printf("it's moved\n");
+			if (!station->point) {
+				station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));			
+			}
 			if (station->image) {
 				osm_gps_map_image_remove(map, station->image);
-				station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix);
+				station->image = osm_gps_map_image_add(map, *(packet->latitude), *(packet->longitude), station->pix);
 				g_object_set (station->image, "x-align", 0.0f, NULL); 			
 			}
 			if (!station->track) {
 				station->track = osm_gps_map_track_new();
-				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
-				osm_gps_map_track_add_point(station->track, &pt);
+//				osm_gps_map_point_set_degrees (station->point, station->lat, station->lon);
+				osm_gps_map_track_add_point(station->track, station->point);
 			    osm_gps_map_track_add(OSM_GPS_MAP(map), station->track);
 			}
-			station->lat = *(packet->latitude);
-			station->lon = *(packet->longitude);
-			osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
-			osm_gps_map_track_add_point(station->track, &pt);
+			
+			osm_gps_map_point_set_degrees (station->point, *(packet->latitude), *(packet->longitude));
+
+//			station->lat = *(packet->latitude);
+//			station->lon = *(packet->longitude);
+//			osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
+			osm_gps_map_track_add_point(station->track, station->point);
 		} else printf("it hasn't moved\n");
 		
 
