@@ -41,6 +41,7 @@ GdkPixbuf *g_star_image = NULL;
 cairo_surface_t *g_symbol_image = NULL;
 cairo_surface_t *g_symbol_image2 = NULL;
 OsmGpsMapImage *g_last_image = NULL;
+GtkStatusbar *statusbar = NULL;
 
 GHashTable *stations;
 
@@ -84,6 +85,21 @@ static GOptionEntry entries[] =
   { "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
   { NULL }
 };
+
+static void aprsmap_clear_status() {
+	gtk_statusbar_pop(statusbar, 0);
+	return FALSE;
+}
+
+
+void aprsmap_set_status(char *msg) {
+//	gtk_statusbar_pop(statusbar, gtk_statusbar_get_context_id(statusbar, "some_context"));
+//	gtk_statusbar_push(statusbar, gtk_statusbar_get_context_id(statusbar, "some_context"), msg);
+
+	gtk_statusbar_pop(statusbar, 0);
+	gtk_statusbar_push(statusbar, 0, msg);
+	g_timeout_add_seconds(3, (GSourceFunc)aprsmap_clear_status, NULL);
+}
 
 
 
@@ -364,6 +380,8 @@ main (int argc, char **argv)
                     g_cclosure_new(gtk_main_quit, NULL, NULL));
     gtk_window_add_accel_group(GTK_WINDOW(widget), ag);
 
+	statusbar = GTK_STATUSBAR(gtk_builder_get_object(builder, "statusbar1"));
+
 	//Set up GTK_ENTRY boxes in the preferences pop up
 	latent = GTK_ENTRY(gtk_builder_get_object(builder, "declat"));
 	lonent = GTK_ENTRY(gtk_builder_get_object(builder, "declon"));
@@ -375,6 +393,9 @@ main (int argc, char **argv)
 	g_object_unref( G_OBJECT( builder ) );
 
     gtk_widget_show_all (widget);
+    
+    
+    aprsmap_set_status("Hello World");
 	
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MESSAGE, g_log_default_handler, NULL);

@@ -39,6 +39,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	
 	struct addrinfo server;
 	gint err;
+	gchar buf[256];
 
 	// somewhere to put the result of the lookup
 	struct addrinfo *res;
@@ -82,6 +83,9 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
+		sprintf(buf, "Connecting to %s...", hostname);
+		printf("%s\n", buf);
+		aprsmap_set_status(hostname);
 		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
 
 		// set up a socket, and attempt to connect
@@ -221,8 +225,8 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 static void *start_aprsis_thread(void *ptr) {
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
-	
-	g_message("connecting to %s", ctx->host);
+
+	sleep(2);
 	if (aprsis_connect(ctx)) {
 		g_error("failed to connect");
 	}
