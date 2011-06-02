@@ -12,9 +12,8 @@ typedef struct {
 	char symbol[2];
 	OsmGpsMapImage *image;
 	OsmGpsMapTrack *track;
+	OsmGpsMapPoint *point;
 	GdkPixbuf *pix;
-	double lat;
-	double lon;
 	double speed;
 	double course;
 } APRSMapStation;

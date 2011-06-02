@@ -75,7 +75,7 @@ convert_alpha (guchar *dest_data,
 
 
 
-static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
+static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 	// return the symbol pixbuf
 
 	guint width=80, height=18;
@@ -123,7 +123,7 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet) {
     	cairo_set_font_size(cr, 10);
     	cairo_move_to(cr, 20, 13);
     	cairo_set_source_rgba(cr, 0, 0, 0, 1);
-    	cairo_show_text(cr,packet->src_callsign);
+    	cairo_show_text(cr, name);
     	
     	
 		cairo_surface_flush(surface);
@@ -163,6 +163,8 @@ gboolean process_packet(gchar *msg) {
 	OsmGpsMapPoint pt;
 
 	char errmsg[256]; // ugh
+	char name[10];
+	
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
 		printf("couldn't decode that...\n");
@@ -171,15 +173,30 @@ gboolean process_packet(gchar *msg) {
 		return TRUE;
 	}
 	//printf("packet type='%s'\n", packet_type[*(packet->type)]);
-	//if (packet->latitude) printf("has position\n");
-
+	
+	printf("packet type is %s\n", packet_type[*(packet->type)]);
+	if (packet->latitude) printf("has position %f %f\n", *(packet->latitude), *(packet->longitude));
+	
+	// get the name for this item
+	bzero(&name, 10);
+	switch (*(packet->type)) {
+		case fapOBJECT:
+		case fapITEM:
+			strncpy(&name, packet->object_or_item_name, 9);
+			break;
+		default:
+			strncpy(&name, packet->src_callsign, 9);
+		break;
+	}
+	printf("name is %s\n",name);
+	
 	// have we got this station?  Look it up
-	station = g_hash_table_lookup(stations, packet->src_callsign);
+	station = g_hash_table_lookup(stations, name);
 	
 	if (!station) { // no, create a new one
 		station = g_new0(APRSMapStation, 1);
-		station->callsign = g_strdup(packet->src_callsign);
-		station->pix = aprsmap_get_symbol(packet);
+		station->callsign = g_strdup(name);
+		station->pix = aprsmap_get_symbol(packet, &name);
 		if (station->pix) {
 	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
 			g_object_set (station->image, "x-align", 0.0f, NULL); 						
@@ -195,6 +212,7 @@ gboolean process_packet(gchar *msg) {
 	} else {
 		printf("already got station %s\n", station->callsign);
 		if (aprsmap_station_moved(packet, station)) {
+			// fixme - determine if it really *has* moved, or if it's moved from 0,0
 			printf("it's moved\n");
 			if (station->image) {
 				osm_gps_map_image_remove(map, station->image);
