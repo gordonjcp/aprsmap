@@ -166,6 +166,89 @@ static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *stat
 	return FALSE;
 }
 
+static APRSMapStation* get_station(fap_packet_t *packet) {
+	// return either a new station, or an existing one
+	char name[10];
+	APRSMapStation *station;
+	
+	// objects and items are sent from a callsign, but have a name
+	// which is passed as part of the payload
+	bzero(&name, 10);
+	switch (*(packet->type)) {
+		case fapOBJECT:
+		case fapITEM:
+			strncpy(name, packet->object_or_item_name, 9);
+			break;
+		default:
+			strncpy(name, packet->src_callsign, 9);
+		break;
+	}
+	station = g_hash_table_lookup(stations, name);
+	if (!station) {
+		printf("new station %s\n", name);
+		station = g_new0(APRSMapStation, 1);
+		station->callsign = g_strdup(name);
+	}
+	return station;
+}
+
+static void position_station(APRSMapStation *station, fap_packet_t *packet) {
+	// deal with position packets
+	float lat, lon;
+	printf("co-ordinates: %f %f\n", *(packet->latitude), *(packet->longitude));
+	if (station->point) {
+		osm_gps_map_point_get_degrees (station->point, &lat, &lon);
+		printf("co-ordinates: %f %f\n", lat, lon);
+
+		if ((lat != (float)*(packet->latitude)) || (lon != (float)*(packet->longitude))) {
+			printf("it moved\n");
+		}
+	
+	} else {
+		printf("first position packet received for this station\n");
+		station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));			
+	}
+}
+
+gboolean process_packet(gchar *msg) {
+	// process an incoming packet, and call a suitable function
+	fap_packet_t *packet;
+	fap_packet_type_t type;
+	APRSMapStation *station;
+	char errmsg[256];
+	char name[10];
+
+	packet = fap_parseaprs(msg, strlen(msg), 0);
+	if (packet->error_code) {
+		fap_explain_error(*packet->error_code, errmsg);
+		g_message("%s", errmsg);
+		return TRUE;
+	}
+	
+	type = *(packet->type);
+	printf("packet type is %s\n", packet_type[type]);
+
+	// see if we have a record of this, or not
+	station = get_station(packet);
+
+	switch(type) {
+		case fapOBJECT:
+		case fapITEM:
+		case fapLOCATION:
+			position_station(station, packet);
+			break;
+		default:
+			printf("unhandled\n");
+			break;
+	}
+
+
+
+	g_hash_table_replace(stations, station->callsign, station);
+
+}
+
+/*
 gboolean process_packet(gchar *msg) {
 
 	fap_packet_t *packet;
@@ -256,5 +339,5 @@ gboolean process_packet(gchar *msg) {
 	// need to keep returning "true" for the callback to keep running
 	return TRUE;
 }
-
+*/
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
