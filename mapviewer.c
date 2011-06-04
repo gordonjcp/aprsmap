@@ -238,6 +238,8 @@ main (int argc, char **argv)
 	g_signal_connect (
 				gtk_builder_get_object(builder, "prefs_button"), "clicked",
 				G_CALLBACK (on_properties_clicked_event), properties);
+	g_signal_connect (G_OBJECT (map), "button-press-event",
+                G_CALLBACK (on_button_press_event), (gpointer) map);
    
 
  /*  potentially unneccesary callbacks.

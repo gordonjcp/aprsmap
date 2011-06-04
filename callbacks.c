@@ -10,20 +10,20 @@
 
 #include "callbacks.h"
 
-/* 
-	Unconnected callbacks that will likely become useful in time. 
+
 
 G_MODULE_EXPORT gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
-{
-    OsmGpsMapPoint coord;
-    float lat, lon;
-    int zoom;
-    OsmGpsMap *map = OSM_GPS_MAP(widget);
-
-    return FALSE;
+{	
+	if(event->type == GDK_2BUTTON_PRESS) {
+	int zoom;
+    	g_object_get(map, "zoom", &zoom, NULL);
+    	osm_gps_map_set_zoom(map, zoom+1);
 }
-
+   	 return FALSE;
+}
+/* 
+	Unconnected callbacks that will likely become useful in time. 
 G_MODULE_EXPORT gboolean
 on_button_release_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
