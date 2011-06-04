@@ -29,11 +29,14 @@
 
 #include "aprsis.h"
 #include "station.h"
+#include "mapviewer.h"
+#include "callbacks.h"
 
 OsmGpsMap *map;
 GtkEntry *latent;
 GtkEntry *lonent;
 GtkEntry *rangeent;
+GtkWidget *about;
 GtkWidget *popup;
 GtkComboBox *server;
 
@@ -44,30 +47,17 @@ OsmGpsMapImage *g_last_image = NULL;
 
 GHashTable *stations;
 
-//aprs details structure - enables passing of variables between the properties pop up and the main program
-
-typedef struct _aprs_details{
-
-double lat;
-double lon;
-int range;
-aprsis_ctx *ctx;
-
-} aprs_details;
-
-aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
-
 //function that lets us define the values in the aprs_details
 aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx)	{
 
-aprs_details *details = calloc(1, sizeof(aprs_details));
+	aprs_details *details = calloc(1, sizeof(aprs_details));
 
 	details->lat = lat;
 	details->lon = lon;
 	details->range = range;
 	details->ctx = ctx;
 
-return details;
+	return details;
 }
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
@@ -75,116 +65,21 @@ static gboolean opt_friendly_cache = FALSE;
 static gboolean opt_no_cache = FALSE;
 static gboolean opt_debug = FALSE;
 static char *opt_cache_base_dir = NULL;
+static char *packet_log_file = NULL;
+static char *aprsis_server = NULL;
+static char *aprsis_port = NULL;
 static GOptionEntry entries[] =
 {
-  { "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
-  { "no-cache", 'n', 0, G_OPTION_ARG_NONE, &opt_no_cache, "Disable cache", NULL },
-  { "cache-basedir", 'b', 0, G_OPTION_ARG_FILENAME, &opt_cache_base_dir, "Cache basedir", NULL },
-  { "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Enable debugging", NULL },
-  { "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
+	{ "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
+	{ "no-cache", 'n', 0, G_OPTION_ARG_NONE, &opt_no_cache, "Disable cache", NULL },
+	{ "cache-basedir", 'b', 0, G_OPTION_ARG_FILENAME, &opt_cache_base_dir, "Cache basedir", NULL },
+	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Enable debugging", NULL },
+	{ "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
+	{ "aprsis-server", 's', 0, G_OPTION_ARG_STRING, &aprsis_server, "APRS-IS server", "HOST" },
+	{ "aprsis-port", 'p', 0, G_OPTION_ARG_STRING, &aprsis_port, "APRS-IS port number", "PORT" },
+	{ "packet-log-file", 'l', 0, G_OPTION_ARG_FILENAME, &packet_log_file, "Log network IO to a file", "FILE" },
   { NULL }
 };
-
-
-
-static gboolean
-on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
-{
-    OsmGpsMapPoint coord;
-    float lat, lon;
-    OsmGpsMap *map = OSM_GPS_MAP(widget);
-    return FALSE;
-}
-
-static gboolean
-on_button_release_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
-{
-    float lat,lon;
-    OsmGpsMap *map = OSM_GPS_MAP(widget);
-
-    g_object_get(map, "latitude", &lat, "longitude", &lon, NULL);
-    gchar *msg = g_strdup_printf("%f,%f",lat,lon);
-    g_free(msg);
-
-    return FALSE;
-}
-
-static gboolean
-on_zoom_in_clicked_event (GtkWidget *widget, gpointer user_data)
-{
-    int zoom;
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    g_object_get(map, "zoom", &zoom, NULL);
-    osm_gps_map_set_zoom(map, zoom+1);
-    return FALSE;
-}
-
-static gboolean
-on_zoom_out_clicked_event (GtkWidget *widget, gpointer user_data)
-{
-    int zoom;
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-    g_object_get(map, "zoom", &zoom, NULL);
-    osm_gps_map_set_zoom(map, zoom-1);
-    return FALSE;
-}
-
-static gboolean
-on_home_clicked_event (GtkWidget *widget, gpointer user_data)
-{
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
-	//change this bitch up
-    osm_gps_map_set_center_and_zoom(map,55.00,-4.0,5);
-    return FALSE;
-}
-static gboolean
-on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
-{    
-	gtk_window_present( GTK_WINDOW( popup ) );
-	return FALSE;
-}
-static gboolean
-on_properties_ok_clicked (GtkWidget *widget, aprs_details *properties)
-{
-	double oldlat = properties->lat;
-	double oldlon = properties->lon;   
-	printf("We were: %f%f\n",oldlat,oldlon);
-	properties->lat=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(latent)),NULL);
-	properties->lon=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(lonent)), NULL);
-	properties->range=g_ascii_strtod (gtk_entry_get_text(GTK_ENTRY(rangeent)), NULL); 
-	printf("We are: %f%f\n",properties->lat,properties->lon);  
-	//Check Latitude/Longitude entries are correct
-	if(properties->lat > 89.9 || properties->lat < -89.9) {
-	//printf("Invalid Lat\n");
-	double homelat = oldlat; 
-	//printf("New Lat:%f\n", homelat);
-	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
-	}
-	if(properties->lon > 180 || properties->lon < -180) {
-	//printf("Invalid Lon\n");
-	double homelon = oldlon; 
-	//printf("New Lon:%f\n", homelon);
-	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
-	}
-	//centre map on new coordinates after widget closed
-	osm_gps_map_set_center_and_zoom(map,properties->lat, properties->lon, 5);
-	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
-	gtk_widget_hide(	GTK_WIDGET( popup ) );
-	return FALSE;
-}
-static gboolean
-on_properties_hide_event (GtkWidget *widget, gpointer user_data)
-{
-	gtk_widget_hide(	GTK_WIDGET( popup ) );
-	return FALSE;
-}
-
-static void
-on_close (GtkWidget *widget, gpointer user_data)
-{
-    gtk_widget_destroy(widget);
-    gtk_main_quit();
-}
 
 
 static void
@@ -210,7 +105,6 @@ main (int argc, char **argv)
     GtkBuilder *builder;
     GtkWidget *widget;
     GtkAccelGroup *ag;
-
     OsmGpsMapLayer *osd;
     const char *repo_uri;
     char *cachedir, *cachebasedir;
@@ -218,22 +112,6 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
-	//aprsis_ctx *ctx = aprsis_new("euro.aprs2.net", "14580", "aprsmap", "-1");
-	aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
-	
-	//set variables properties->lat, properties->lon, properties->range, properties->ctx
-	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
-
-	//aprsis_set_filter(properties->ctx,55.00,-4.50,300);   
-
-    g_thread_init(NULL);
-    gtk_init (&argc, &argv);
-
-    // initialise APRS parser
-    fap_init();
-
-	// connect to APRS_IS server
-	start_aprsis(ctx);
 
     context = g_option_context_new ("- Map browser");
     g_option_context_set_help_enabled(context, FALSE);
@@ -243,6 +121,34 @@ main (int argc, char **argv)
         usage(context);
         return 1;
     }
+	
+	if (aprsis_server == NULL) {
+		aprsis_server = strdup("euro.aprs2.net");
+	}
+
+	if (aprsis_port == 0) {
+		aprsis_port = strdup("14580");
+	}
+
+	aprsis_ctx *ctx = aprsis_new(aprsis_server, aprsis_port, "aprsmap", "-1");
+	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
+
+	//set variables properties->lat, properties->lon, properties->range, properties->ctx
+	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
+
+	if (packet_log_file != NULL) {
+		FILE *log = fopen(packet_log_file, "w");
+		aprsis_set_log(ctx, log);
+	}
+
+    g_thread_init(NULL);
+    gtk_init (&argc, &argv);
+
+    // initialise APRS parser
+    fap_init();
+
+	// connect to APRS_IS server
+	start_aprsis(ctx);
 
     /* Only use the repo_uri to check if the user has supplied a
     valid map source ID */
@@ -312,8 +218,8 @@ main (int argc, char **argv)
                 GTK_BOX(gtk_builder_get_object(builder, "map_box")),
                 GTK_WIDGET(map), TRUE, TRUE, 0);
   
-    // centre on UK, because I'm UK-centric
-    osm_gps_map_set_center_and_zoom(map, 55.00,-4.00, 5);
+    // centre on the latitude and longitude set in the properties menu 
+    osm_gps_map_set_center_and_zoom(map, properties->lat,properties->lon, 5);
 
     //Connect to signals
     g_signal_connect (
@@ -325,16 +231,7 @@ main (int argc, char **argv)
     g_signal_connect (
                 gtk_builder_get_object(builder, "home_button"), "clicked",
                 G_CALLBACK (on_home_clicked_event), (gpointer) map);
-	
-	//Show Properties Windows
-	g_signal_connect (
-				gtk_builder_get_object(builder, "settings_button"), "clicked",
-				G_CALLBACK (on_properties_clicked_event), (gpointer) map);
-	//Hide Properties Window
-	g_signal_connect (
-				gtk_builder_get_object(builder, "closePrefs"), "clicked",
-				G_CALLBACK (on_properties_hide_event), (gpointer) map);
-	g_signal_connect (
+		g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
 				G_CALLBACK (on_properties_ok_clicked), properties);
     g_signal_connect (G_OBJECT (map), "button-release-event",
@@ -345,6 +242,7 @@ main (int argc, char **argv)
                 (gpointer) gtk_builder_get_object(builder, "cache_label")); */
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
+
     g_signal_connect (widget, "destroy",
                       G_CALLBACK (on_close), (gpointer) map);
 
@@ -352,8 +250,11 @@ main (int argc, char **argv)
 
 	popup = GTK_WIDGET(gtk_builder_get_object(builder, "proppop"));
 
+	about = GTK_WIDGET(gtk_builder_get_object(builder, "about"));
+
 	//connect mapviewer.ui values to popup window
 	gtk_builder_connect_signals(builder, popup);
+	gtk_builder_connect_signals(builder, about);
 
     //Setup accelerators.
     ag = gtk_accel_group_new();
@@ -374,7 +275,7 @@ main (int argc, char **argv)
 	g_object_unref( G_OBJECT( builder ) );
 
     gtk_widget_show_all (widget);
-	
+	//gtk_dialog_run (GTK_DIALOG(data->about) );
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MESSAGE, g_log_default_handler, NULL);
     gtk_main ();
