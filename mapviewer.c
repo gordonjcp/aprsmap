@@ -66,6 +66,8 @@ static gboolean opt_no_cache = FALSE;
 static gboolean opt_debug = FALSE;
 static char *opt_cache_base_dir = NULL;
 static char *packet_log_file = NULL;
+static char *aprsis_server = NULL;
+static char *aprsis_port = NULL;
 static GOptionEntry entries[] =
 {
 	{ "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
@@ -73,6 +75,8 @@ static GOptionEntry entries[] =
 	{ "cache-basedir", 'b', 0, G_OPTION_ARG_FILENAME, &opt_cache_base_dir, "Cache basedir", NULL },
 	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Enable debugging", NULL },
 	{ "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
+	{ "aprsis-server", 's', 0, G_OPTION_ARG_STRING, &aprsis_server, "APRS-IS server", "HOST" },
+	{ "aprsis-port", 'p', 0, G_OPTION_ARG_STRING, &aprsis_port, "APRS-IS port number", "PORT" },
 	{ "packet-log-file", 'l', 0, G_OPTION_ARG_FILENAME, &packet_log_file, "Log network IO to a file", "FILE" },
   { NULL }
 };
@@ -117,7 +121,15 @@ main (int argc, char **argv)
         return 1;
     }
 	
-	aprsis_ctx *ctx = aprsis_new("euro.aprs2.net", "14580", "aprsmap", "-1");
+	if (aprsis_server == NULL) {
+		aprsis_server = strdup("euro.aprs2.net");
+	}
+
+	if (aprsis_port == 0) {
+		aprsis_port = strdup("14580");
+	}
+
+	aprsis_ctx *ctx = aprsis_new(aprsis_server, aprsis_port, "aprsmap", "-1");
 	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
 	
 	//set variables properties->lat, properties->lon, properties->range, properties->ctx
