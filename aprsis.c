@@ -116,7 +116,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
-		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
+		g_message("trying: %s (%s) over %s", hostname, ipstr, (char *) ipver);
 
 		// set up a socket, and attempt to connect
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
