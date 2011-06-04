@@ -221,22 +221,29 @@ main (int argc, char **argv)
     // centre on the latitude and longitude set in the properties menu 
     osm_gps_map_set_center_and_zoom(map, properties->lat,properties->lon, 5);
 
-    //Connect to signals
-    g_signal_connect (
-                gtk_builder_get_object(builder, "zoom_in_button"), "clicked",
-                G_CALLBACK (on_zoom_in_clicked_event), (gpointer) map);
-    g_signal_connect (
-                gtk_builder_get_object(builder, "zoom_out_button"), "clicked",
-                G_CALLBACK (on_zoom_out_clicked_event), (gpointer) map);
+    //Connect to signals that need data passed to them
+    
     g_signal_connect (
                 gtk_builder_get_object(builder, "home_button"), "clicked",
-                G_CALLBACK (on_home_clicked_event), (gpointer) map);
-		g_signal_connect (
+                G_CALLBACK (on_home_clicked_event), properties);
+    g_signal_connect (
+                gtk_builder_get_object(builder, "homemenuitem"), "activate",
+                G_CALLBACK (on_home_clicked_event), properties);
+	g_signal_connect (
+				gtk_builder_get_object(builder, "sethomemenuitem"), "activate",
+				G_CALLBACK (on_set_home_activate_event), properties);
+	g_signal_connect (
 				gtk_builder_get_object(builder, "okPrefs"), "clicked",
 				G_CALLBACK (on_properties_ok_clicked), properties);
-    g_signal_connect (G_OBJECT (map), "button-release-event",
-                G_CALLBACK (on_button_release_event),
-                (gpointer) gtk_builder_get_object(builder, "text_entry"));
+	g_signal_connect (
+				gtk_builder_get_object(builder, "prefs_button"), "clicked",
+				G_CALLBACK (on_properties_clicked_event), properties);
+   
+
+ /*  potentially unneccesary callbacks.
+g_signal_connect (
+				G_OBJECT (map), "button-release-event",
+                G_CALLBACK (on_button_release_event),(gpointer) gtk_builder_get_object(builder, "text_entry"));
    /* g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
                 G_CALLBACK (on_tiles_queued_changed),
                 (gpointer) gtk_builder_get_object(builder, "cache_label")); */

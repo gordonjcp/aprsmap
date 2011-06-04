@@ -19,19 +19,22 @@ G_MODULE_EXPORT gboolean
 on_button_release_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data);
 
 G_MODULE_EXPORT gboolean
+on_set_home_activate_event (GtkWidget *widget, aprs_details *properties);
+
+G_MODULE_EXPORT gboolean
 on_zoom_in_clicked_event (GtkWidget *widget, gpointer user_data);
 
 G_MODULE_EXPORT gboolean
 on_zoom_out_clicked_event (GtkWidget *widget, gpointer user_data);
 
 G_MODULE_EXPORT gboolean
-on_home_clicked_event (GtkWidget *widget, gpointer user_data);
+on_home_clicked_event (GtkWidget *widget, aprs_details *properties);
 
 G_MODULE_EXPORT void
 on_about_clicked_event (GtkWidget *widget, gpointer user_data);
 
 G_MODULE_EXPORT gpointer
-on_properties_clicked_event (GtkWidget *widget, gpointer user_data);
+on_properties_clicked_event (GtkWidget *widget, aprs_details *properties);
 
 G_MODULE_EXPORT gboolean
 on_properties_ok_clicked (GtkWidget *widget, aprs_details *properties);

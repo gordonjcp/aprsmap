@@ -9,7 +9,7 @@
     <property name="version">0.0.01b-rc0.1</property>
     <property name="copyright" translatable="yes">Copyright Gordon JC Pearce (MM0YEQ) et al</property>
     <property name="comments" translatable="yes">A simple, silly and prettier aprs mapping program for the rest of us</property>
-    <property name="website">http://gordonjcp.github.com</property>
+    <property name="website">http://gordonjcp.github.com/aprsmap</property>
     <property name="website_label" translatable="yes">Homepage</property>
     <property name="license" translatable="yes">Something to be decided properly someday.</property>
     <property name="authors">Gordon JC Pearce MM0YEQ (github.com/gordonjcp)
@@ -39,6 +39,11 @@ Kyle Gordon 2M1DIQ (github.com/kylegordon) </property>
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkImage" id="image1">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-missing-image</property>
   </object>
   <object class="GtkListStore" id="liststore1">
     <columns>
@@ -475,15 +480,15 @@ Longitude</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="use_action_appearance">False</property>
-                    <property name="label" translatable="yes">_Edit</property>
+                    <property name="label" translatable="yes">_Location</property>
                     <property name="use_underline">True</property>
                     <child type="submenu">
                       <object class="GtkMenu" id="menu2">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
-                          <object class="GtkImageMenuItem" id="imagemenuitem6">
-                            <property name="label">gtk-cut</property>
+                          <object class="GtkImageMenuItem" id="homemenuitem">
+                            <property name="label">gtk-home</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_action_appearance">False</property>
@@ -492,33 +497,31 @@ Longitude</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkImageMenuItem" id="imagemenuitem7">
-                            <property name="label">gtk-copy</property>
+                          <object class="GtkImageMenuItem" id="sethomemenuitem">
+                            <property name="label">Set Home Here</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_action_appearance">False</property>
-                            <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
+                            <property name="image">image1</property>
+                            <property name="use_stock">False</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkImageMenuItem" id="imagemenuitem8">
-                            <property name="label">gtk-paste</property>
+                          <object class="GtkSeparatorMenuItem" id="separatormenuitem2">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_action_appearance">False</property>
-                            <property name="use_underline">True</property>
-                            <property name="use_stock">True</property>
                           </object>
                         </child>
                         <child>
-                          <object class="GtkImageMenuItem" id="imagemenuitem9">
-                            <property name="label">gtk-delete</property>
+                          <object class="GtkImageMenuItem" id="propertiesmenuitem">
+                            <property name="label">gtk-properties</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="use_action_appearance">False</property>
                             <property name="use_underline">True</property>
                             <property name="use_stock">True</property>
+                            <signal name="activate" handler="on_properties_clicked_event" swapped="no"/>
                           </object>
                         </child>
                       </object>
@@ -594,6 +597,7 @@ Longitude</property>
                     <property name="receives_default">True</property>
                     <property name="use_action_appearance">False</property>
                     <property name="use_stock">True</property>
+                    <signal name="clicked" handler="on_zoom_in_clicked_event" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -609,6 +613,7 @@ Longitude</property>
                     <property name="receives_default">True</property>
                     <property name="use_action_appearance">False</property>
                     <property name="use_stock">True</property>
+                    <signal name="clicked" handler="on_zoom_out_clicked_event" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>
@@ -632,14 +637,13 @@ Longitude</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="settings_button">
+                  <object class="GtkButton" id="prefs_button">
                     <property name="label">gtk-preferences</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="use_action_appearance">False</property>
                     <property name="use_stock">True</property>
-                    <signal name="clicked" handler="on_properties_clicked_event" swapped="no"/>
                   </object>
                   <packing>
                     <property name="expand">True</property>

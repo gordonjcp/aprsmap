@@ -10,12 +10,17 @@
 
 #include "callbacks.h"
 
+/* 
+	Unconnected callbacks that will likely become useful in time. 
+
 G_MODULE_EXPORT gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
 {
     OsmGpsMapPoint coord;
     float lat, lon;
+    int zoom;
     OsmGpsMap *map = OSM_GPS_MAP(widget);
+
     return FALSE;
 }
 
@@ -30,13 +35,31 @@ on_button_release_event (GtkWidget *widget, GdkEventButton *event, gpointer user
     g_free(msg);
 
     return FALSE;
+} */
+
+G_MODULE_EXPORT gboolean
+on_set_home_activate_event (GtkWidget *widget, aprs_details *properties)
+{
+	float lat,lon;
+	
+	g_object_get(map, "latitude", &lat, "longitude", &lon, NULL);
+	
+	properties->lat = lat;
+	properties->lon = lon;
+	
+	//set filter around home area
+	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
+	//update text boxes in properties
+	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
+	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
+	gtk_entry_set_text(rangeent, g_strdup_printf("%d",properties->range));
+	return FALSE;  
 }
 
 G_MODULE_EXPORT gboolean
 on_zoom_in_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     int zoom;
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
     g_object_get(map, "zoom", &zoom, NULL);
     osm_gps_map_set_zoom(map, zoom+1);
     return FALSE;
@@ -46,18 +69,16 @@ G_MODULE_EXPORT gboolean
 on_zoom_out_clicked_event (GtkWidget *widget, gpointer user_data)
 {
     int zoom;
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
     g_object_get(map, "zoom", &zoom, NULL);
     osm_gps_map_set_zoom(map, zoom-1);
     return FALSE;
 }
 
 G_MODULE_EXPORT gboolean
-on_home_clicked_event (GtkWidget *widget, gpointer user_data)
+on_home_clicked_event (GtkWidget *widget, aprs_details *properties)
 {
-    OsmGpsMap *map = OSM_GPS_MAP(user_data);
 	//change this bitch up
-    osm_gps_map_set_center_and_zoom(map,55.00,-4.0,5);
+    osm_gps_map_set_center_and_zoom(map,properties->lat,properties->lon,5);
     return FALSE;
 }
 G_MODULE_EXPORT void
@@ -65,10 +86,9 @@ on_about_clicked_event (GtkWidget *widget, gpointer user_data)
 {
 	gtk_dialog_run (GTK_DIALOG(about) );
 	gtk_widget_hide (GTK_WIDGET(about));
-	//return FALSE;
 }
 G_MODULE_EXPORT gpointer
-on_properties_clicked_event (GtkWidget *widget, gpointer user_data)
+on_properties_clicked_event (GtkWidget *widget, aprs_details *properties)
 {    
 	gtk_window_present( GTK_WINDOW( popup ) );
 	return FALSE;
