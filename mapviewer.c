@@ -64,13 +64,15 @@ static gboolean opt_friendly_cache = FALSE;
 static gboolean opt_no_cache = FALSE;
 static gboolean opt_debug = FALSE;
 static char *opt_cache_base_dir = NULL;
+static char *packet_log_file = NULL;
 static GOptionEntry entries[] =
 {
-  { "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
-  { "no-cache", 'n', 0, G_OPTION_ARG_NONE, &opt_no_cache, "Disable cache", NULL },
-  { "cache-basedir", 'b', 0, G_OPTION_ARG_FILENAME, &opt_cache_base_dir, "Cache basedir", NULL },
-  { "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Enable debugging", NULL },
-  { "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
+	{ "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
+	{ "no-cache", 'n', 0, G_OPTION_ARG_NONE, &opt_no_cache, "Disable cache", NULL },
+	{ "cache-basedir", 'b', 0, G_OPTION_ARG_FILENAME, &opt_cache_base_dir, "Cache basedir", NULL },
+	{ "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Enable debugging", NULL },
+	{ "map", 'm', 0, G_OPTION_ARG_INT, &opt_map_provider, "Map source", "N" },
+	{ "packet-log-file", 'l', 0, G_OPTION_ARG_FILENAME, &packet_log_file, "Log network IO to a file", "FILE" },
   { NULL }
 };
 
@@ -213,11 +215,25 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 
+    context = g_option_context_new ("- Map browser");
+    g_option_context_set_help_enabled(context, FALSE);
+    g_option_context_add_main_entries (context, entries, NULL);
+
+    if (!g_option_context_parse (context, &argc, &argv, &error)) {
+        usage(context);
+        return 1;
+    }
+	
 	aprsis_ctx *ctx = aprsis_new("euro.aprs2.net", "14580", "aprsmap", "-1");
 	//aprsis_ctx *ctx = aprsis_new("localhost", "14580", "aprsmap", "-1");
 	
 	//set variables properties->lat, properties->lon, properties->range, properties->ctx
 	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
+
+	if (packet_log_file != NULL) {
+		FILE *log = fopen(packet_log_file, "w");
+		aprsis_set_log(ctx, log);
+	}
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
@@ -227,15 +243,6 @@ main (int argc, char **argv)
 
 	// connect to APRS_IS server
 	start_aprsis(ctx);
-
-    context = g_option_context_new ("- Map browser");
-    g_option_context_set_help_enabled(context, FALSE);
-    g_option_context_add_main_entries (context, entries, NULL);
-
-    if (!g_option_context_parse (context, &argc, &argv, &error)) {
-        usage(context);
-        return 1;
-    }
 
     /* Only use the repo_uri to check if the user has supplied a
     valid map source ID */
