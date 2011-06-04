@@ -1,3 +1,6 @@
+#ifndef APRSIS_H
+#define APRSIS_H
+
 #define APRSIS_LOGIN "user %s pass %s vers aprsmap 0.0"
 
 typedef struct _aprsis_ctx {
@@ -26,3 +29,4 @@ void aprs_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int rad
 int aprsis_login(aprsis_ctx *ctx);
 void aprsis_close(aprsis_ctx *ctx);
 
+#endif
