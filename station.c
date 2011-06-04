@@ -92,7 +92,7 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 
 
 	if (packet->symbol_table && packet->symbol_code) {
-		printf("Symbol: '%c%c'\n", packet->symbol_table, packet->symbol_code);
+		printf("Creating symbol: '%c%c for %s'\n", packet->symbol_table, packet->symbol_code, name);
 
 		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
 		cr = cairo_create(surface);
@@ -150,19 +150,12 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 
 static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *station) {
 	// has the station moved?
-	
-	float lat, lon;
 	if (!packet->latitude) return FALSE; // don't know if it's moved; nothing to tell us it has
-	if (!station->point) return TRUE;   // oo-er, not sure - must check that we call this only if the station has a point
-	/*
-	lat = *(packet->latitude);
-	lon = *(packet->longitude);
+	if (station->fix == APRS_NOFIX) return TRUE; // if it's got a latitude we now have a fix
+
+	// if there was a previous fix and this packet contains a position, compare
 	if (*(packet->latitude) != station->lat) return TRUE;
 	if (*(packet->longitude) != station->lon) return TRUE;
-	*/
-	osm_gps_map_point_get_degrees (station->point, &lat, &lon);
-	if (*(packet->latitude) != lat) return TRUE;
-	if (*(packet->longitude) != lon) return TRUE;
 	return FALSE;
 }
 
@@ -194,19 +187,26 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 
 static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	// deal with position packets
-	float lat, lon;
-	printf("co-ordinates: %f %f\n", *(packet->latitude), *(packet->longitude));
-	if (station->point) {
-		osm_gps_map_point_get_degrees (station->point, &lat, &lon);
-		printf("co-ordinates: %f %f\n", lat, lon);
+	if (station->fix == APRS_VALIDFIX) {
+		//osm_gps_map_point_get_degrees (station->point, &lat, &lon);
+		printf("co-ordinates: %f %f\n", station->lat, station->lon);
 
-		if ((lat != (float)*(packet->latitude)) || (lon != (float)*(packet->longitude))) {
+		if ((station->lat != *(packet->latitude)) || (station->lon != *(packet->longitude))) {
 			printf("it moved\n");
 		}
 	
 	} else {
 		printf("first position packet received for this station\n");
-		station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));			
+		station->lat = *(packet->latitude);
+		station->lon = *(packet->longitude);
+		station->fix = APRS_VALIDFIX;
+		station->pix = aprsmap_get_symbol(packet, station->callsign);
+		if (station->pix) {
+	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
+			g_object_set (station->image, "x-align", 0.0f, NULL); 						
+		} else {
+			g_error("not really an error, just checking to see if we ever get a posit with no symbol");
+		}
 	}
 }
 
@@ -241,11 +241,7 @@ gboolean process_packet(gchar *msg) {
 			printf("unhandled\n");
 			break;
 	}
-
-
-
 	g_hash_table_replace(stations, station->callsign, station);
-
 }
 
 /*
