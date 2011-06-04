@@ -19,6 +19,17 @@ typedef struct _aprsis_ctx {
 
 } aprsis_ctx;
 
+//aprs details structure - enables passing of variables between the properties pop up and the main program
+
+typedef struct _aprs_details {
+    double lat;
+    double lon;
+    int range;
+    aprsis_ctx *ctx;
+} aprs_details;
+
+aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
+
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass);
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len);
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len);
