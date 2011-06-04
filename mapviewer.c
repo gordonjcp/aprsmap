@@ -29,6 +29,7 @@
 
 #include "aprsis.h"
 #include "station.h"
+#include "mapviewer.h"
 
 OsmGpsMap *map;
 GtkEntry *latent;
@@ -45,34 +46,17 @@ OsmGpsMapImage *g_last_image = NULL;
 
 GHashTable *stations;
 
-
-
-
-
-//aprs details structure - enables passing of variables between the properties pop up and the main program
-
-typedef struct _aprs_details{
-
-double lat;
-double lon;
-int range;
-aprsis_ctx *ctx;
-
-} aprs_details;
-
-aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
-
 //function that lets us define the values in the aprs_details
 aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx)	{
 
-aprs_details *details = calloc(1, sizeof(aprs_details));
+	aprs_details *details = calloc(1, sizeof(aprs_details));
 
 	details->lat = lat;
 	details->lon = lon;
 	details->range = range;
 	details->ctx = ctx;
 
-return details;
+	return details;
 }
 
 static OsmGpsMapSource_t opt_map_provider = OSM_GPS_MAP_SOURCE_OPENSTREETMAP;
