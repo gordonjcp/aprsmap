@@ -196,8 +196,11 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			    osm_gps_map_track_add(OSM_GPS_MAP(map), station->track);
 			} else {
 				// already got a track
+				osm_gps_map_image_remove(map, station->image);
 				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
 				osm_gps_map_track_add_point(station->track, &pt);
+				station->image = osm_gps_map_image_add(map, station->lat, station->lon, station->pix);
+				g_object_set (station->image, "x-align", 0.0f, NULL); 
 			}
 		}
 	
