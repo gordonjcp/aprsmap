@@ -121,7 +121,7 @@ int aprsis_connect(aprsis_ctx *ctx) {
 
 		//buf = g_strdup_printf("Connecting to %s...", hostname);
 		//g_sprintf(buf, "Connecting to %s...", hostname);
-		//aprsmap_set_status(buf);
+		aprsmap_set_status(g_strdup_printf("Connecting to %s...", hostname));
 		
 		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
 

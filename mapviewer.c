@@ -88,14 +88,14 @@ static GOptionEntry entries[] =
 
 
 static gboolean *aprsmap_clear_status() {
-	printf("*** %s(): \n",__PRETTY_FUNCTION__);
+	// remove message from the statusbar when the timer runs out
 	gtk_statusbar_pop(statusbar, st_ctx);
 	return FALSE;
 }
 
 
 void aprsmap_set_status(gchar *msg) {
-	printf("*** %s(): \n",__PRETTY_FUNCTION__);
+	// put new message on the status bar
 	gtk_statusbar_pop(statusbar, st_ctx);
 	gtk_statusbar_push(statusbar, st_ctx, msg);
 	g_timeout_add_seconds(3, (GSourceFunc)aprsmap_clear_status, NULL);
