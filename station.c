@@ -90,7 +90,6 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 	cairo_content_t content;
 	GdkPixbuf *dest;
 
-
 	if (packet->symbol_table && packet->symbol_code) {
 		printf("Creating symbol: '%c%c for %s'\n", packet->symbol_table, packet->symbol_code, name);
 
@@ -99,22 +98,16 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 
 		// draw background
 		cairo_set_source_rgba(cr, 1, 1, 1, .5);
-		//cairo_rectangle(cr, 18 , 0, width-18, height);
-		//cairo_clip(cr);
 		cairo_rectangle(cr, 0, 0, width, height);
 		cairo_clip(cr);
 		cairo_paint(cr);
-		
-		
+
 	    c = packet->symbol_code-32;
    		yo = (gdouble)((c*16)%256);
    		xo = (gdouble)(c &0xf0);
 		if (packet->symbol_table == '\\') {
-   			//symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image2, xo, yo, 16, 16);
    			cairo_set_source_surface (cr, g_symbol_image2, 1-xo, 1-yo);
-
 		} else {
-//			symbol = gdk_pixbuf_new_subpixbuf(g_symbol_image, xo, yo, 16, 16);
    			cairo_set_source_surface (cr, g_symbol_image, 1-xo, 1-yo);
 		}
 		cairo_rectangle (cr, 1, 1, 16, 16);
@@ -187,12 +180,25 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 
 static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	// deal with position packets
+	OsmGpsMapPoint pt;
 	if (station->fix == APRS_VALIDFIX) {
-		//osm_gps_map_point_get_degrees (station->point, &lat, &lon);
 		printf("co-ordinates: %f %f\n", station->lat, station->lon);
-
 		if ((station->lat != *(packet->latitude)) || (station->lon != *(packet->longitude))) {
 			printf("it moved\n");
+			station->lat = *(packet->latitude);
+			station->lon = *(packet->longitude);
+			
+			// we may need to create a track, then
+			if (!station->track) {
+				station->track = osm_gps_map_track_new();
+				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
+				osm_gps_map_track_add_point(station->track, &pt);
+			    osm_gps_map_track_add(OSM_GPS_MAP(map), station->track);
+			} else {
+				// already got a track
+				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
+				osm_gps_map_track_add_point(station->track, &pt);
+			}
 		}
 	
 	} else {
