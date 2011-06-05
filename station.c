@@ -84,17 +84,32 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 	guint c;
 	GdkPixbuf *pix;
 	GdkPixbuf *symbol;
+	cairo_t *cr;
 	cairo_text_extents_t extent;
 	cairo_surface_t *surface;
-	cairo_t *cr;
 	cairo_content_t content;
 	GdkPixbuf *dest;
 
 	if (packet->symbol_table && packet->symbol_code) {
-		printf("Creating symbol: '%c%c for %s'\n", packet->symbol_table, packet->symbol_code, name);
+//		printf("Creating symbol: '%c%c for %s'\n", packet->symbol_table, packet->symbol_code, name);
 
+		// don't know how big the text is going to end up
+		// I don't see a way of getting the font extent without having a context
+		// and that appears to require a surface
+		// I can't be bothered creating a surface then a context to get the size of the text
+		// then destroy()ing it all and recreating it with the new size
+		// labels that take more than 80px wide will be truncated
 		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
 		cr = cairo_create(surface);
+
+		// get callsign/name size
+		cairo_select_font_face(cr, "Sans",
+			CAIRO_FONT_SLANT_NORMAL,
+			CAIRO_FONT_WEIGHT_NORMAL);
+    	cairo_set_font_size(cr, 12);
+		cairo_text_extents(cr, name, &extent);
+		
+		width = 22 + extent.width;
 
 		// draw background
 		cairo_set_source_rgba(cr, 1, 1, 1, .5);
@@ -102,6 +117,9 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 		cairo_clip(cr);
 		cairo_paint(cr);
 
+		// calculate the symbol image
+		// this fails on symbols that aren't on the \ or / table
+		// they default to the / table, probably wrongly ;-)
 	    c = packet->symbol_code-32;
    		yo = (gdouble)((c*16)%256);
    		xo = (gdouble)(c &0xf0);
@@ -113,14 +131,13 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 		cairo_rectangle (cr, 1, 1, 16, 16);
 		cairo_fill (cr);
 
-    	cairo_set_font_size(cr, 10);
-    	cairo_move_to(cr, 20, 13);
+		// draw the callsign
+    	cairo_move_to(cr, 20, height-1-(height-extent.height)/2);
     	cairo_set_source_rgba(cr, 0, 0, 0, 1);
     	cairo_show_text(cr, name);
-    	
-    	
-		cairo_surface_flush(surface);
 
+		// munge it into a pixbuf for OsmGpsMapImage
+		cairo_surface_flush(surface);
 		content = cairo_surface_get_content(surface);
 		pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
 
@@ -171,7 +188,7 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 	}
 	station = g_hash_table_lookup(stations, name);
 	if (!station) {
-		printf("new station %s\n", name);
+//		printf("new station %s\n", name);
 		station = g_new0(APRSMapStation, 1);
 		station->callsign = g_strdup(name);
 	}
@@ -182,9 +199,9 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	// deal with position packets
 	OsmGpsMapPoint pt;
 	if (station->fix == APRS_VALIDFIX) {
-		printf("co-ordinates: %f %f\n", station->lat, station->lon);
+//		printf("co-ordinates: %f %f\n", station->lat, station->lon);
 		if ((station->lat != *(packet->latitude)) || (station->lon != *(packet->longitude))) {
-			printf("it moved\n");
+//			printf("it moved\n");
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
 			
@@ -205,7 +222,7 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 		}
 	
 	} else {
-		printf("first position packet received for this station\n");
+//		printf("first position packet received for this station\n");
 		station->lat = *(packet->latitude);
 		station->lon = *(packet->longitude);
 		station->fix = APRS_VALIDFIX;
@@ -253,96 +270,4 @@ gboolean process_packet(gchar *msg) {
 	g_hash_table_replace(stations, station->callsign, station);
 }
 
-/*
-gboolean process_packet(gchar *msg) {
-
-	fap_packet_t *packet;
-	APRSMapStation *station;
-	OsmGpsMapPoint pt;
-
-	char errmsg[256]; // ugh
-	char name[10];
-	
-	packet = fap_parseaprs(msg, strlen(msg), 0);
-	if (packet->error_code) {
-		printf("couldn't decode that...\n");
-		fap_explain_error(*packet->error_code, errmsg);
-		g_message("%s", errmsg);
-		return TRUE;
-	}
-	//printf("packet type='%s'\n", packet_type[*(packet->type)]);
-	
-	printf("packet type is %s\n", packet_type[*(packet->type)]);
-	if (packet->latitude) printf("has position %f %f\n", *(packet->latitude), *(packet->longitude));
-	
-	// get the name for this item
-	bzero(&name, 10);
-	switch (*(packet->type)) {
-		case fapOBJECT:
-		case fapITEM:
-			strncpy(name, packet->object_or_item_name, 9);
-			break;
-		default:
-			strncpy(name, packet->src_callsign, 9);
-		break;
-	}
-	printf("name is %s\n",name);
-	
-	// have we got this station?  Look it up
-	station = g_hash_table_lookup(stations, name);
-	
-	if (!station) { // no, create a new one
-		station = g_new0(APRSMapStation, 1);
-		station->callsign = g_strdup(name);
-		station->pix = aprsmap_get_symbol(packet, name);
-		if (station->pix) {
-	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
-			g_object_set (station->image, "x-align", 0.0f, NULL); 						
-		}
-		if (packet->latitude) {
-			// can't see why it would have lat but not lon, probably a horrible bug in the waiting
-			station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));
-			//station->lat = *(packet->latitude);
-			//station->lon = *(packet->longitude);		
-		}
-
-		g_hash_table_insert(stations, station->callsign, station);
-		printf("inserted station %s\n", station->callsign);
-	} else {
-		printf("already got station %s\n", station->callsign);
-		if (aprsmap_station_moved(packet, station)) {
-			// fixme - determine if it really *has* moved, or if it's moved from 0,0
-			printf("it's moved\n");
-			if (!station->point) {
-				station->point = osm_gps_map_point_new_degrees(*(packet->latitude), *(packet->longitude));			
-			}
-			if (station->image) {
-				osm_gps_map_image_remove(map, station->image);
-				station->image = osm_gps_map_image_add(map, *(packet->latitude), *(packet->longitude), station->pix);
-				g_object_set (station->image, "x-align", 0.0f, NULL); 			
-			}
-			if (!station->track) {
-				station->track = osm_gps_map_track_new();
-//				osm_gps_map_point_set_degrees (station->point, station->lat, station->lon);
-				osm_gps_map_track_add_point(station->track, station->point);
-			    osm_gps_map_track_add(OSM_GPS_MAP(map), station->track);
-			}
-			
-			osm_gps_map_point_set_degrees (station->point, *(packet->latitude), *(packet->longitude));
-
-//			station->lat = *(packet->latitude);
-//			station->lon = *(packet->longitude);
-//			osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
-			osm_gps_map_track_add_point(station->track, station->point);
-		} else printf("it hasn't moved\n");
-		
-
-	
-	}
-	
-	fap_free(packet);
-	// need to keep returning "true" for the callback to keep running
-	return TRUE;
-}
-*/
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
