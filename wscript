@@ -8,7 +8,7 @@ APPNAME='aprsmap'
 top = '.'
 out = 'build'
 
-def set_options(opt):
+def options(opt):
     opt.tool_options('compiler_cc')
 
 def configure(conf):
@@ -24,9 +24,10 @@ def configure(conf):
 def build(bld):
     # aprsmap
     bld(
-        features = 'cc cprogram',
-        source = bld.path.ant_glob('**/*.c'),
+        features = 'c cprogram',
+        source = ['aprsis.c', 'callbacks.c', 'mapviewer.c', 'station.c'],
         target = 'aprsmap',
         uselib = "GTK OSMGPSMAP FAP GMODULE",
         includes = '. /usr/include')
+
 
