@@ -156,12 +156,22 @@ static void aprsmap_get_label(fap_packet_t *packet, APRSMapStation *station) {
 		cairo_text_extents(cr, station->callsign, &extent);
 
 		// draw background
-		cairo_set_source_rgba(cr, 1, 1, 1, .5);
-		cairo_rectangle(cr, 0, 0, 22+extent.width, height);
-		cairo_clip(cr);
-		cairo_paint(cr);
+		cairo_arc(cr, 6.5f, 6.5f, 6,  3.14, 4.71);
+		cairo_arc(cr, 24+extent.width-6.5f, 6.5f, 6,  4.71, 6.28);
+		cairo_arc(cr, 24+extent.width-6.5f, height-6.5f, 6, 0, 1.57);
+		cairo_arc(cr, 6.5f, height-6.5f, 6, 1.57, 3.14);
+		cairo_close_path(cr);
 
+		cairo_set_source_rgba(cr, 1, 1, 1, .75);
+		cairo_set_source_rgba(cr, .85, .85, .85, .75);
+		cairo_fill_preserve(cr);
 
+		//cairo_set_source_rgba(cr, .5, .5, .5, 1);
+		cairo_set_source_rgba(cr, 1, 1, 1, 1);
+		cairo_set_line_width(cr, 2.0f);
+		cairo_stroke(cr);
+
+		// draw the icon
 		aprsmap_set_icon(packet, station);
 		cairo_set_source_surface(cr, station->icon, 2, 2);
 		cairo_paint(cr);
