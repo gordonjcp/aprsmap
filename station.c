@@ -75,10 +75,10 @@ convert_alpha (guchar *dest_data,
 
 
 
-static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
+static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
 	// return the symbol pixbuf
 
-	guint width=80, height=18;
+	guint width=90, height=18;
 
 	gdouble xo, yo;
 	guint c;
@@ -108,12 +108,10 @@ static GdkPixbuf *aprsmap_get_symbol(fap_packet_t *packet, char *name) {
 			CAIRO_FONT_WEIGHT_NORMAL);
     	cairo_set_font_size(cr, 12);
 		cairo_text_extents(cr, name, &extent);
-		
-		width = 22 + extent.width;
 
 		// draw background
 		cairo_set_source_rgba(cr, 1, 1, 1, .5);
-		cairo_rectangle(cr, 0, 0, width, height);
+		cairo_rectangle(cr, 0, 0, 22+extent.width, height);
 		cairo_clip(cr);
 		cairo_paint(cr);
 
@@ -198,6 +196,7 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	// deal with position packets
 	OsmGpsMapPoint pt;
+	char newname[10];
 	if (station->fix == APRS_VALIDFIX) {
 //		printf("co-ordinates: %f %f\n", station->lat, station->lon);
 		if ((station->lat != *(packet->latitude)) || (station->lon != *(packet->longitude))) {
@@ -216,6 +215,10 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 				osm_gps_map_image_remove(map, station->image);
 				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
 				osm_gps_map_track_add_point(station->track, &pt);
+				//if(packet->speed) {
+				//	snprintf(&newname, 9, "%f mph", *(packet->speed)/1.6);				
+				//	station->pix=aprsmap_get_label(packet, newname);
+				//}	
 				station->image = osm_gps_map_image_add(map, station->lat, station->lon, station->pix);
 				g_object_set (station->image, "x-align", 0.0f, NULL); 
 			}
@@ -223,15 +226,19 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	
 	} else {
 //		printf("first position packet received for this station\n");
-		station->lat = *(packet->latitude);
-		station->lon = *(packet->longitude);
-		station->fix = APRS_VALIDFIX;
-		station->pix = aprsmap_get_symbol(packet, station->callsign);
-		if (station->pix) {
-	    	station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
-			g_object_set (station->image, "x-align", 0.0f, NULL); 						
+		if (packet->latitude) {
+			station->lat = *(packet->latitude);
+			station->lon = *(packet->longitude);
+			station->fix = APRS_VALIDFIX;
+			station->pix = aprsmap_get_label(packet, station->callsign);
+			if (station->pix) {
+	    		station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
+				g_object_set (station->image, "x-align", 0.0f, NULL); 						
+			} else {
+				g_error("not really an error, just checking to see if we ever get a posit with no symbol");
+			}
 		} else {
-			g_error("not really an error, just checking to see if we ever get a posit with no symbol");
+			g_message("got a position packet, with no valid position. ignoring.");
 		}
 	}
 }
