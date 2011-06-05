@@ -5,6 +5,8 @@
 #include <fap.h>
 #include <osm-gps-map.h>
 
+#include <math.h>
+
 #include "station.h"
 
 extern GdkPixbuf *g_star_image;
@@ -13,6 +15,14 @@ extern cairo_surface_t *g_symbol_image2;
 
 extern GHashTable *stations;
 extern OsmGpsMap *map;
+
+// workaround for libfap bug
+/// The magic constant.
+#define PI 3.14159265
+/// Degrees to radians.
+#define DEG2RAD(x) (x/360*2*PI)
+/// Radians to degrees.
+#define RAD2DEG(x) (x*(180/PI))
 
 
 char *packet_type[] = {
@@ -73,17 +83,61 @@ convert_alpha (guchar *dest_data,
   }
 }
 
+static void aprsmap_set_icon(fap_packet_t *packet, APRSMapStation *station) {
+	// get the icon given a packet to get the symbol from
+	cairo_t *cr;
+	guint c;
+	gdouble xo, yo;
+	gdouble angle;
+	
+	if (!station->icon) {
+		station->icon = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 22, 22);
+	}
+	
+	cr = cairo_create(station->icon);
 
+	// calculate the symbol image
+	// this fails on symbols that aren't on the \ or / table
+	// they default to the / table, probably wrongly ;-)
+    c = packet->symbol_code-32;
+	yo = (gdouble)((c*16)%256);
+	xo = (gdouble)(c &0xf0);
 
-static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
+	if (station->course) {
+	  	cairo_translate(cr, 8, 8);
+	  	if (station->course > 180) {
+	  		cairo_scale(cr, -1, 1);
+		  	angle = 270.0f - station->course;
+		} else {
+			angle = station->course - 90.0f;
+		}
+	  	cairo_rotate(cr, DEG2RAD(angle));
+	   	cairo_translate(cr, -8, -8);
+	}
+	
+	if (packet->symbol_table == '\\') {
+   		cairo_set_source_surface (cr, g_symbol_image2, 1-xo, 1-yo);
+
+	} else {
+   		cairo_set_source_surface (cr, g_symbol_image, 1-xo, 1-yo);
+	}
+
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_rectangle (cr, 1, 1, 16, 16);
+	//cairo_clip(cr);
+
+	cairo_fill (cr);
+	cairo_surface_flush(station->icon);
+	cairo_destroy(cr);	
+}
+
+static void aprsmap_get_label(fap_packet_t *packet, APRSMapStation *station) {
 	// return the symbol pixbuf
 
-	guint width=90, height=18;
+	guint width=90, height=22;
 
 	gdouble xo, yo;
 	guint c;
-	GdkPixbuf *pix;
-	GdkPixbuf *symbol;
 	cairo_t *cr;
 	cairo_text_extents_t extent;
 	cairo_surface_t *surface;
@@ -91,15 +145,7 @@ static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
 	GdkPixbuf *dest;
 
 	if (packet->symbol_table && packet->symbol_code) {
-//		printf("Creating symbol: '%c%c for %s'\n", packet->symbol_table, packet->symbol_code, name);
-
-		// don't know how big the text is going to end up
-		// I don't see a way of getting the font extent without having a context
-		// and that appears to require a surface
-		// I can't be bothered creating a surface then a context to get the size of the text
-		// then destroy()ing it all and recreating it with the new size
-		// labels that take more than 80px wide will be truncated
-		surface = cairo_image_surface_create(CAIRO_FORMAT_RGB24, width, height);
+		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
 		cr = cairo_create(surface);
 
 		// get callsign/name size
@@ -107,7 +153,7 @@ static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
 			CAIRO_FONT_SLANT_NORMAL,
 			CAIRO_FONT_WEIGHT_NORMAL);
     	cairo_set_font_size(cr, 12);
-		cairo_text_extents(cr, name, &extent);
+		cairo_text_extents(cr, station->callsign, &extent);
 
 		// draw background
 		cairo_set_source_rgba(cr, 1, 1, 1, .5);
@@ -115,32 +161,23 @@ static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
 		cairo_clip(cr);
 		cairo_paint(cr);
 
-		// calculate the symbol image
-		// this fails on symbols that aren't on the \ or / table
-		// they default to the / table, probably wrongly ;-)
-	    c = packet->symbol_code-32;
-   		yo = (gdouble)((c*16)%256);
-   		xo = (gdouble)(c &0xf0);
-		if (packet->symbol_table == '\\') {
-   			cairo_set_source_surface (cr, g_symbol_image2, 1-xo, 1-yo);
-		} else {
-   			cairo_set_source_surface (cr, g_symbol_image, 1-xo, 1-yo);
-		}
-		cairo_rectangle (cr, 1, 1, 16, 16);
-		cairo_fill (cr);
 
+		aprsmap_set_icon(packet, station);
+		cairo_set_source_surface(cr, station->icon, 2, 2);
+		cairo_paint(cr);
+		
 		// draw the callsign
     	cairo_move_to(cr, 20, height-1-(height-extent.height)/2);
     	cairo_set_source_rgba(cr, 0, 0, 0, 1);
-    	cairo_show_text(cr, name);
+    	cairo_show_text(cr, station->callsign);
 
 		// munge it into a pixbuf for OsmGpsMapImage
 		cairo_surface_flush(surface);
 		content = cairo_surface_get_content(surface);
-		pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
+		if (!station->pix) station->pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
 
-    convert_alpha (gdk_pixbuf_get_pixels (pix),
-                   gdk_pixbuf_get_rowstride (pix),
+    convert_alpha (gdk_pixbuf_get_pixels (station->pix),
+                   gdk_pixbuf_get_rowstride (station->pix),
                    cairo_image_surface_get_data (surface),
                    cairo_image_surface_get_stride (surface),
                    0, 0,
@@ -148,12 +185,7 @@ static GdkPixbuf *aprsmap_get_label(fap_packet_t *packet, char *name) {
 
 		cairo_surface_destroy(surface);
 		cairo_destroy(cr);
-		
-		return pix;
 	}
-	
-	// otherwise, nothing		
-	return NULL;
 }
 
 static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *station) {
@@ -193,17 +225,43 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 	return station;
 }
 
+double gjcp_direction(double lon0, double lat0, double lon1, double lat1)
+{
+	double direction;
+
+	/* Convert degrees into radians. */
+	lon0 = DEG2RAD(lon0);
+	lat0 = DEG2RAD(lat0);
+	lon1 = DEG2RAD(lon1);
+	lat1 = DEG2RAD(lat1);
+
+	/* Direction from Aviation Formulary V1.42 by Ed Williams by way of
+	 * http://mathforum.org/library/drmath/view/55417.html */
+	direction = atan2(sin(lon1-lon0)*cos(lat1), cos(lat0)*sin(lat1)-sin(lat0)*cos(lat1)*cos(lon1-lon0));
+
+	if ( direction < 0 )
+	{
+		/* Make direction positive. */
+		direction += 2 * PI;
+	}
+	return RAD2DEG(direction);
+}
+
+
+
 static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	// deal with position packets
 	OsmGpsMapPoint pt;
-	char newname[10];
 	if (station->fix == APRS_VALIDFIX) {
 //		printf("co-ordinates: %f %f\n", station->lat, station->lon);
 		if ((station->lat != *(packet->latitude)) || (station->lon != *(packet->longitude))) {
 //			printf("it moved\n");
+			// not all APRS packets contain speed and course
+			// we can work it out though
+			station->course = gjcp_direction(station->lon, station->lat, *(packet->longitude), *(packet->latitude));
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
-			
+
 			// we may need to create a track, then
 			if (!station->track) {
 				station->track = osm_gps_map_track_new();
@@ -215,10 +273,7 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 				osm_gps_map_image_remove(map, station->image);
 				osm_gps_map_point_set_degrees (&pt, station->lat, station->lon);
 				osm_gps_map_track_add_point(station->track, &pt);
-				//if(packet->speed) {
-				//	snprintf(&newname, 9, "%f mph", *(packet->speed)/1.6);				
-				//	station->pix=aprsmap_get_label(packet, newname);
-				//}	
+				aprsmap_get_label(packet, station);
 				station->image = osm_gps_map_image_add(map, station->lat, station->lon, station->pix);
 				g_object_set (station->image, "x-align", 0.0f, NULL); 
 			}
@@ -229,8 +284,9 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 		if (packet->latitude) {
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
+			if (packet->course) station->course = *(packet->course);
 			station->fix = APRS_VALIDFIX;
-			station->pix = aprsmap_get_label(packet, station->callsign);
+			aprsmap_get_label(packet, station);
 			if (station->pix) {
 	    		station->image = osm_gps_map_image_add(map,*(packet->latitude), *(packet->longitude), station->pix); 
 				g_object_set (station->image, "x-align", 0.0f, NULL); 						

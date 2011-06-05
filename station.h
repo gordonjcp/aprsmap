@@ -17,6 +17,7 @@ typedef struct {
 	OsmGpsMapImage *image;
 	OsmGpsMapTrack *track;
 	GdkPixbuf *pix;
+	cairo_surface_t *icon;
 	gdouble speed;
 	gdouble course;
 	gdouble lat, lon;
