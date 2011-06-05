@@ -145,15 +145,17 @@ int aprsis_login(aprsis_ctx *ctx) {
 
 
 	// note that this doesn't *actually* check what the prompt is
+	bzero(&buf, 256);
 	n = aprsis_read(ctx, buf, 256);
 	if (n<0) {
-		error("couldn't read from socket");
+		g_error("couldn't read from socket");
 	}
 	g_message("got: %s",buf);
 
 	sprintf(buf, APRSIS_LOGIN"\n", ctx->user, ctx->pass);
 	g_message("sending: %s", buf);
 	aprsis_write(ctx, buf, strlen(buf));
+	bzero(&buf, 256);
 	n = aprsis_read(ctx, buf, 256);
 	if (n<0) {
 		g_error("couldn't read from socket");
