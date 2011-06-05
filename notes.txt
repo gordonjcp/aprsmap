@@ -27,3 +27,23 @@ already got station G6UIM
 
 
 G4WAX>APNU19,NONE,qAR,MB7UXX:!5456.74N/00135.56W# (G4WAX APRS DIGI UIDIGI 1.9B3)
+
+G4ZJH-2, G0DEC, G7HEJ seem to form a triangle
+they all report a "traffic" object
+
+sp3sux has a good track
+g0hwc has a good track
+mb7uah has many points
+EI2MLP? seems to have shot across from England
+2E0ICB
+MM1MPB
+MB7UXX
+M1PJB
+2M0HCD
+M3GDW
+M6NHK
+MB7UR
+
+2E0VCU-9>GPSC08,MB7UC*,WIDE2-1,qAR,G3PWJ-3:$GPGGA,112044.000,5057.4426,N,00030.0019,W,1,08,1.1,16.8,M,47.1,M,,0000*71
+caused core
+

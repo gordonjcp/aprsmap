@@ -30,7 +30,41 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 	ctx->user = strdup(user);
 	ctx->pass = strdup(pass);
 
+	ctx->log_file = NULL;
+
 	return ctx;
+}
+
+int aprsis_set_log(aprsis_ctx *ctx, FILE *file) {
+	ctx->log_file = file;
+}
+
+int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len) {
+	int count = read(ctx->sockfd, buf, len);
+
+	if (ctx->log_file != NULL) {
+		printf("Logging read\n");
+		fprintf(ctx->log_file, "< %s\n", buf);
+	}
+
+	return count;
+}
+
+int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len) {
+	int count = write(ctx->sockfd, buf, len);
+
+	if (ctx->log_file != NULL) {
+		printf("Logging write\n");
+		fprintf(ctx->log_file, "> %s\n", buf);
+	}
+
+	return count;
+}
+
+void aprsis_write_log(aprsis_ctx *ctx, char *buf, size_t len) {
+	if (ctx->log_file != NULL) {
+		fprintf(ctx->log_file, "< %s\n", buf);
+	}
 }
 
 int aprsis_connect(aprsis_ctx *ctx) {
@@ -83,10 +117,14 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
+<<<<<<< HEAD
 		sprintf(buf, "Connecting to %s...", hostname);
 		printf("%s\n", buf);
 		aprsmap_set_status(hostname);
 		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
+=======
+		g_message("trying: %s (%s) over %s", hostname, ipstr, (char *) ipver);
+>>>>>>> master
 
 		// set up a socket, and attempt to connect
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -116,7 +154,7 @@ int aprsis_login(aprsis_ctx *ctx) {
 
 
 	// note that this doesn't *actually* check what the prompt is
-	n = read(ctx->sockfd, buf, 256);
+	n = aprsis_read(ctx, buf, 256);
 	if (n<0) {
 		error("couldn't read from socket");
 	}
@@ -124,8 +162,8 @@ int aprsis_login(aprsis_ctx *ctx) {
 
 	sprintf(buf, APRSIS_LOGIN"\n", ctx->user, ctx->pass);
 	g_message("sending: %s", buf);
-	write(ctx->sockfd, buf, strlen(buf));
-	n = read(ctx->sockfd, buf, 256);
+	aprsis_write(ctx, buf, strlen(buf));
+	n = aprsis_read(ctx, buf, 256);
 	if (n<0) {
 		g_error("couldn't read from socket");
 	}
@@ -144,7 +182,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
 		g_message("Sending filter: %s", buf);
-		write(ctx->sockfd, buf, strlen(buf));
+		aprsis_write(ctx, buf, strlen(buf));
 	}
 }
 
@@ -154,7 +192,7 @@ void aprsis_set_filter_string(aprsis_ctx *ctx, char *filter) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter %s\n", filter);
 		g_message("Sending filter: %s", buf);
-		write(ctx->sockfd, buf, strlen(buf));
+		aprsis_write(ctx, buf, strlen(buf));
 	}
 }
 
@@ -193,6 +231,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	GError *err = NULL;
 	gchar *msg;
 	gsize len;
+	aprsis_ctx *ctx = (aprsis_ctx *) data;
 
 	if (condition & G_IO_HUP)
 		g_error ("Read end of pipe died!");   // FIXME - handle this more gracefully
@@ -209,11 +248,12 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 		return FALSE; // shut down the callback, for now 
 	}
 	
+	aprsis_write_log(ctx, msg, len);
 	
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
-		printf ("\n------------------------------------------\nRead %u bytes: %s\n", (unsigned int) len, msg);
+		printf ("\n------------------------------------------\nRead %u bytes: %s", (unsigned int) len, msg);
 		process_packet(msg);
 	}
 
@@ -233,13 +273,14 @@ static void *start_aprsis_thread(void *ptr) {
 
 	g_message("logging in...");
 	aprsis_login(ctx);
+
 	aprsis_set_filter(ctx, 55, -4, 600);
 	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
 	//aprsis_set_filter_string(ctx, "p/HB9"); // Swiss callsigns
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
-    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, NULL))
+    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
         g_error ("Cannot add watch on GIOChannel!");
 }
 

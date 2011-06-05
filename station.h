@@ -6,17 +6,22 @@
 #include <gtk/gtk.h>
 #include <osm-gps-map.h>
 
+typedef enum {
+	APRS_NOFIX,
+	APRS_VALIDFIX
+} aprs_fix_t;
 
 typedef struct {
 	gchar *callsign;
-	char symbol[2];
+	gchar symbol[2];
 	OsmGpsMapImage *image;
 	OsmGpsMapTrack *track;
 	GdkPixbuf *pix;
-	double lat;
-	double lon;
-	double speed;
-	double course;
+	cairo_surface_t *icon;
+	gdouble speed;
+	gdouble course;
+	gdouble lat, lon;
+	aprs_fix_t fix;
 } APRSMapStation;
 
 gboolean process_packet(gchar *msg);

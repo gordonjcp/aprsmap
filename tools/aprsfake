@@ -3,18 +3,20 @@
 import os, sys, time, random, socket
 
 def usage():
-    print "Usage: %s PORT FILE"
+    print "Usage: %s FILE"
     print "\tPORT is the TCP port to bind to"
     print "\tFILE is the file to read - one packet per line"
 
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 2:
     usage()
     exit(-1)
 
-PORT = int(sys.argv[1])
-FILE = sys.argv[2]
+#PORT = int(sys.argv[1])
+PORT = 14580
+FILE = sys.argv[1]
 clients = []
+
 
 s = socket.socket(
     socket.AF_INET, socket.SOCK_STREAM)
@@ -28,5 +30,5 @@ f = open(FILE)
 while 1:
     for l in f:
         client.send(l)
-        time.sleep(random.randint(1, 10))
+        time.sleep(0.1) #random.randint(1, 10))
     
