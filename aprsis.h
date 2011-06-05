@@ -30,6 +30,7 @@ typedef struct _aprs_details {
 
 aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
 
+void start_aprsis(aprsis_ctx *ctx);
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass);
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len);
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len);

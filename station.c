@@ -325,7 +325,7 @@ gboolean process_packet(gchar *msg) {
 	}
 	
 	type = *(packet->type);
-	printf("packet type is %s\n", packet_type[type]);
+	printf("%s, %s packet\n", packet->src_callsign, packet_type[type]);
 
 	// see if we have a record of this, or not
 	station = get_station(packet);

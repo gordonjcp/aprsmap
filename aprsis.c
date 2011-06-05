@@ -17,8 +17,9 @@
 #include "station.h"
 #include "mapviewer.h"
 
-static gboolean reconnect;
+static gboolean connected;
 static guint aprs1;
+static guint reconnect_timer;
 static GIOChannel *aprsis_io;
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
@@ -117,14 +118,12 @@ int aprsis_connect(aprsis_ctx *ctx) {
 			ipver = "IPv6";
 		}
 		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
-<<<<<<< HEAD
-		sprintf(buf, "Connecting to %s...", hostname);
-		printf("%s\n", buf);
-		aprsmap_set_status(hostname);
+
+		//buf = g_strdup_printf("Connecting to %s...", hostname);
+		//g_sprintf(buf, "Connecting to %s...", hostname);
+		//aprsmap_set_status(buf);
+		
 		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
-=======
-		g_message("trying: %s (%s) over %s", hostname, ipstr, (char *) ipver);
->>>>>>> master
 
 		// set up a socket, and attempt to connect
 		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -136,14 +135,6 @@ int aprsis_connect(aprsis_ctx *ctx) {
 		break;
 	};
 	freeaddrinfo(res);
-	// FIXME make errors work properly, this is ugly
-	
-	/* No idea if this is the right thing to do, but here goes...
-	if (!err) {
-		return 0;
-	} else {
-		return -1;
-	} */
 	return (err);
 }
 
@@ -234,7 +225,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	aprsis_ctx *ctx = (aprsis_ctx *) data;
 
 	if (condition & G_IO_HUP)
-		g_error ("Read end of pipe died!");   // FIXME - handle this more gracefully
+		g_message ("Read end of pipe died!");   // FIXME - handle this more gracefully
 
 	if (condition & G_IO_ERR) {
 		g_message ("IO error");
@@ -253,7 +244,6 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	if (msg[0] == '#') {
 		printf("can ignore comment message: %s\n", msg);
 	} else {
-		printf ("\n------------------------------------------\nRead %u bytes: %s", (unsigned int) len, msg);
 		process_packet(msg);
 	}
 
@@ -262,37 +252,78 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 }
 
 
+static gboolean aprsis_reconnect(void *ptr) {
+	// called once a second when the timer times out
+	aprsis_ctx *ctx = ptr;
+	printf("*** %s(): \n",__PRETTY_FUNCTION__);
+
+	if (!connected) {
+		printf("restarting\n");
+		start_aprsis(ctx);
+	}
+}
+
+static gboolean
+aprsis_io_error(GIOChannel *src, GIOCondition condition, void *ptr)
+{
+	printf("*** %s(): \n",__PRETTY_FUNCTION__);
+	aprsis_ctx *ctx = ptr;
+	connected = FALSE;
+	reconnect_timer = g_timeout_add_seconds(5, aprsis_reconnect, ctx);
+	return FALSE; 
+}
+
 static void *start_aprsis_thread(void *ptr) {
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
 
-	sleep(2);
+	connected = FALSE;
+	if (!reconnect_timer) reconnect_timer = g_timeout_add_seconds(10, aprsis_reconnect, ctx);
+	
 	if (aprsis_connect(ctx)) {
-		g_error("failed to connect");
+		g_message("failed to connect");
+		return;
 	}
 
 	g_message("logging in...");
 	aprsis_login(ctx);
-
+	
+	g_source_remove (reconnect_timer);
+	reconnect_timer = 0;
+	
 	aprsis_set_filter(ctx, 55, -4, 600);
 	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
 	//aprsis_set_filter_string(ctx, "p/HB9"); // Swiss callsigns
 
+	
+
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
     if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
-        g_error ("Cannot add watch on GIOChannel!");
+        g_error ("Cannot add watch on GIOChannel G_IO_IN");
+    if (!g_io_add_watch (aprsis_io,  G_IO_ERR | G_IO_HUP, aprsis_io_error, ctx))
+        g_error ("Cannot add watch on GIOChannel G_IO_IN");
+
+	connected = TRUE;
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
 	// prepare the APRS-IS connection thread
-	reconnect = FALSE;  // don't keep trying if we've already tried to start one
-	// FIXME I should finish the "don't start two threads" code
+
+
+	if (connected) return;
+
 	// remove the IO channel and watch
 	if (aprs1) {
 		g_source_remove(aprs1);
 		aprs1=0;
 	}
+	if (reconnect_timer) {
+		g_source_remove (reconnect_timer);
+		reconnect_timer = 0;
+	}
+
+	
 	if (aprsis_io) {
 		g_io_channel_unref (aprsis_io);
 		aprsis_io = NULL;
