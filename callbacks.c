@@ -9,8 +9,7 @@
 #include <osm-gps-map.h>
 
 #include "callbacks.h"
-
-
+#include "aprsis.h"
 
 G_MODULE_EXPORT gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)
@@ -48,7 +47,7 @@ on_set_home_activate_event (GtkWidget *widget, aprs_details *properties)
 	properties->lon = lon;
 	
 	//set filter around home area
-	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
+	aprsis_set_filter(properties->ctx, properties->lat, properties->lon, properties->range);
 	//update text boxes in properties
 	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
 	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
