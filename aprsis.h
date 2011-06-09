@@ -31,13 +31,16 @@ typedef struct _aprs_details {
 
 aprs_details *aprs_details_new(double lat,double lon,int range,aprsis_ctx *ctx);
 
+
+GError *aprsis_connect(aprsis_ctx *ctx);
+
 void start_aprsis(aprsis_ctx *ctx);
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass);
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len);
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len);
 void aprsis_write_log(aprsis_ctx *ctx, char *buf, size_t len);
 void aprsis_set_log(aprsis_ctx *ctx, FILE *log_file);
-int aprsis_connect(aprsis_ctx *ctx);
+
 void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int radius);
 int aprsis_login(aprsis_ctx *ctx);
 void aprsis_close(aprsis_ctx *ctx);

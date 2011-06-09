@@ -71,73 +71,23 @@ void aprsis_write_log(aprsis_ctx *ctx, char *buf, size_t len) {
 	}
 }
 
-int aprsis_connect(aprsis_ctx *ctx) {
+GError *aprsis_connect(aprsis_ctx *ctx) {
 	// connect to an APRS-IS server
-	// return 0 on success
+	// return GError
 	
-	gint err;
-	gchar buf[256];
+	GError *err = NULL;
+	GSocketClient *client = g_socket_client_new();
+	GSocketConnection *conn = g_socket_client_connect_to_host(client, ctx->host, 14580, NULL, &err); // FIXME needs to convert string to int
+	
+	if (conn) {
+		ctx->skt = g_socket_connection_get_socket(conn);
+	}
+	if (ctx->skt) {
+		ctx->sockfd = g_socket_get_fd(ctx->skt);
+	}
 
-	// somewhere to put the result of the lookup
-	struct addrinfo *res;
-	struct addrinfo hints;
-
-	// clear off any hints, set up for TCP/IPv4
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	//hints.ai_protocol = IPPROTO_TCP;
-
-	char ipstr[INET6_ADDRSTRLEN];
-
-	// get a list of addresses
-	err = getaddrinfo(ctx->host, ctx->port, &hints, &res);
-	if (err != 0)   {
-		g_error("error in getaddrinfo: %s", gai_strerror(err));
-		return 1;
-	} 
-
-
-	// loop down the list, and try to connect
-	for (; res != NULL ; res = res->ai_next) {
-		// get the name
-	    char hostname[NI_MAXHOST] = "";
-		void *addr;
-		void *ipver;
-		err = getnameinfo(res->ai_addr, res->ai_addrlen, hostname, NI_MAXHOST, NULL, 0, 0); 
-		if (err != 0) {
-			g_error("error in getnameinfo: %s", gai_strerror(err));
-			continue;
-		}
-		// MOAR DEBUG
-		if (res->ai_family == AF_INET) {
-		    struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
-			addr = &(ipv4->sin_addr);
-			ipver = "IPv4";
-		} else { 
-			struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res->ai_addr;
-			addr = &(ipv6->sin6_addr);
-			ipver = "IPv6";
-		}
-		inet_ntop(res->ai_family, addr, ipstr, sizeof ipstr);
-
-		//buf = g_strdup_printf("Connecting to %s...", hostname);
-		//g_sprintf(buf, "Connecting to %s...", hostname);
-		aprsmap_set_status(g_strdup_printf("Connecting to %s...", hostname));
-		
-		g_message("trying: %s (%s) over %s", hostname, ipstr, ipver);
-
-		// set up a socket, and attempt to connect
-		ctx->sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		err = connect(ctx->sockfd, res->ai_addr, res->ai_addrlen);
-		if (err != 0) {
-			g_message("can't connect to %s - %s",hostname, strerror(errno));
-			continue;
-		}
-		break;
-	};
-	freeaddrinfo(res);
-	return (err);
+	if(err) g_message ("%s", err->message);
+	return err;
 }
 
 int aprsis_login(aprsis_ctx *ctx) {
@@ -173,7 +123,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 	ctx->longitude = longitude;
 	ctx->radius = radius;
 
-	if (ctx->skt != -1) {
+	if (ctx->skt) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
 		g_message("Sending filter: %s", buf);
@@ -305,48 +255,19 @@ static void start_aprsis_thread(void *ptr) {
 
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
-    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
+    if (!g_io_add_watch (aprsis_io, G_IO_IN, aprsis_got_packet, ctx))
         g_error ("Cannot add watch on GIOChannel G_IO_IN");
     
-    /*
+    
     if (!g_io_add_watch (aprsis_io,  G_IO_ERR | G_IO_HUP, aprsis_io_error, ctx))
         g_error ("Cannot add watch on GIOChannel G_IO_IN");
-*/
+
 	connected = TRUE;
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
 	// prepare the APRS-IS connection thread
-	GSocketClient *client = g_socket_client_new();
-	GError *err = NULL;
-	
-	GSocketConnection *conn = g_socket_client_connect_to_host(client, ctx->host, 14580, NULL, &err);
-	
-	
-	
-	printf("conn = %x\n", conn);	
-	ctx->skt = g_socket_connection_get_socket(conn);
-	g_socket_set_blocking(ctx->skt, TRUE);
-	
-	printf("ctx->skt = %x\n", ctx->skt);
 
-	g_message("logging in...");
-	aprsis_login(ctx);
-	
-	//g_source_remove (reconnect_timer);
-	//reconnect_timer = 0;
-	
-	aprsis_set_filter(ctx, 55, -4, 600);
-
-	ctx->sockfd = g_socket_get_fd(ctx->skt);
-	aprsis_io = g_io_channel_unix_new(ctx->sockfd);
-    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
-        g_error ("Cannot add watch on GIOChannel G_IO_IN");
-
-
-
-
-/*
 	if (connected) return;
 
 	// remove the IO channel and watch
@@ -365,7 +286,7 @@ void start_aprsis(aprsis_ctx *ctx) {
 		aprsis_io = NULL;
 	}
 	g_thread_create((GThreadFunc) start_aprsis_thread, ctx, FALSE, NULL);
-*/
+
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
