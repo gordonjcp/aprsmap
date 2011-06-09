@@ -35,10 +35,11 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len);
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len);
 void aprsis_write_log(aprsis_ctx *ctx, char *buf, size_t len);
-int aprsis_set_log(aprsis_ctx *ctx, FILE *log_file);
+void aprsis_set_log(aprsis_ctx *ctx, FILE *log_file);
 int aprsis_connect(aprsis_ctx *ctx);
-void aprs_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int radius);
+void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int radius);
 int aprsis_login(aprsis_ctx *ctx);
 void aprsis_close(aprsis_ctx *ctx);
+void start_aprsis(aprsis_ctx *ctx);
 
 #endif

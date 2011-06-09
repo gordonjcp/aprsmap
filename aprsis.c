@@ -12,6 +12,7 @@
 #include <string.h>
 #include <netdb.h> 
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "aprsis.h"
 #include "station.h"
@@ -36,7 +37,7 @@ aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, con
 	return ctx;
 }
 
-int aprsis_set_log(aprsis_ctx *ctx, FILE *file) {
+void aprsis_set_log(aprsis_ctx *ctx, FILE *file) {
 	ctx->log_file = file;
 }
 
@@ -72,7 +73,6 @@ int aprsis_connect(aprsis_ctx *ctx) {
 	// connect to an APRS-IS server
 	// return 0 on success
 	
-	struct addrinfo server;
 	gint err;
 	gchar buf[256];
 
@@ -254,6 +254,7 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 }
 
 
+
 static gboolean aprsis_reconnect(void *ptr) {
 	// called once a second when the timer times out
 	aprsis_ctx *ctx = ptr;
@@ -275,7 +276,8 @@ aprsis_io_error(GIOChannel *src, GIOCondition condition, void *ptr)
 	return FALSE; 
 }
 
-static void *start_aprsis_thread(void *ptr) {
+static void start_aprsis_thread(void *ptr) {
+
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
 
@@ -330,7 +332,7 @@ void start_aprsis(aprsis_ctx *ctx) {
 		g_io_channel_unref (aprsis_io);
 		aprsis_io = NULL;
 	}
-	g_thread_create(&start_aprsis_thread, ctx, FALSE, NULL);
+	g_thread_create((GThreadFunc) start_aprsis_thread, ctx, FALSE, NULL);
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
