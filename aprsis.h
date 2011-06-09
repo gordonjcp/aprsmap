@@ -4,9 +4,10 @@
 #define APRSIS_LOGIN "user %s pass %s vers aprsmap 0.0"
 
 typedef struct _aprsis_ctx {
+    GSocket *skt;
+    
     int sockfd;
-
-    char *host;
+	char *host;
     char *port;
     char *user;
     char *pass;

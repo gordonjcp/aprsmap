@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <glib.h>
+#include <gio/gio.h>
 
 #include <sys/socket.h>
 #include <string.h>
@@ -22,6 +23,7 @@ static gboolean connected;
 static guint aprs1;
 static guint reconnect_timer;
 static GIOChannel *aprsis_io;
+static GError *err;
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
@@ -42,7 +44,7 @@ void aprsis_set_log(aprsis_ctx *ctx, FILE *file) {
 }
 
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len) {
-	int count = read(ctx->sockfd, buf, len);
+	int count = g_socket_receive(ctx->skt, buf, len, NULL, &err);
 
 	if (ctx->log_file != NULL) {
 		printf("Logging read\n");
@@ -53,7 +55,7 @@ int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len) {
 }
 
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len) {
-	int count = write(ctx->sockfd, buf, len);
+	int count = g_socket_send(ctx->skt, buf, len, NULL, &err);
 
 	if (ctx->log_file != NULL) {
 		printf("Logging write\n");
@@ -171,7 +173,7 @@ void aprsis_set_filter(aprsis_ctx *ctx, double latitude, double longitude, int r
 	ctx->longitude = longitude;
 	ctx->radius = radius;
 
-	if (ctx->sockfd != -1) {
+	if (ctx->skt != -1) {
 		char buf[64];
 		snprintf(buf, sizeof(buf), "#filter r/%.0f/%.0f/%d\n", latitude, longitude, radius);
 		g_message("Sending filter: %s", buf);
@@ -305,16 +307,46 @@ static void start_aprsis_thread(void *ptr) {
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
     if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
         g_error ("Cannot add watch on GIOChannel G_IO_IN");
+    
+    /*
     if (!g_io_add_watch (aprsis_io,  G_IO_ERR | G_IO_HUP, aprsis_io_error, ctx))
         g_error ("Cannot add watch on GIOChannel G_IO_IN");
-
+*/
 	connected = TRUE;
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
 	// prepare the APRS-IS connection thread
+	GSocketClient *client = g_socket_client_new();
+	GError *err = NULL;
+	
+	GSocketConnection *conn = g_socket_client_connect_to_host(client, ctx->host, 14580, NULL, &err);
+	
+	
+	
+	printf("conn = %x\n", conn);	
+	ctx->skt = g_socket_connection_get_socket(conn);
+	g_socket_set_blocking(ctx->skt, TRUE);
+	
+	printf("ctx->skt = %x\n", ctx->skt);
+
+	g_message("logging in...");
+	aprsis_login(ctx);
+	
+	//g_source_remove (reconnect_timer);
+	//reconnect_timer = 0;
+	
+	aprsis_set_filter(ctx, 55, -4, 600);
+
+	ctx->sockfd = g_socket_get_fd(ctx->skt);
+	aprsis_io = g_io_channel_unix_new(ctx->sockfd);
+    if (!g_io_add_watch (aprsis_io, G_IO_IN | G_IO_ERR | G_IO_HUP, aprsis_got_packet, ctx))
+        g_error ("Cannot add watch on GIOChannel G_IO_IN");
 
 
+
+
+/*
 	if (connected) return;
 
 	// remove the IO channel and watch
@@ -333,6 +365,7 @@ void start_aprsis(aprsis_ctx *ctx) {
 		aprsis_io = NULL;
 	}
 	g_thread_create((GThreadFunc) start_aprsis_thread, ctx, FALSE, NULL);
+*/
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
