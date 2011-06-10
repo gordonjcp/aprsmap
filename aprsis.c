@@ -23,7 +23,8 @@ static gboolean connected;
 static guint aprs1;
 static guint reconnect_timer;
 static GIOChannel *aprsis_io;
-static GError *err;
+
+enum { APRSIS_DISCONNECTED, APRSIS_CONNECTING, APRSIS_CONNECTED };
 
 aprsis_ctx *aprsis_new(const char *host, const char *port, const char *user, const char *pass) {
 	aprsis_ctx *ctx = calloc(1, sizeof(aprsis_ctx));
@@ -44,17 +45,20 @@ void aprsis_set_log(aprsis_ctx *ctx, FILE *file) {
 }
 
 int aprsis_read(aprsis_ctx *ctx, char *buf, size_t len) {
+	// read a line from the GSocket, and maybe log it to a file
+	GError *err;
 	int count = g_socket_receive(ctx->skt, buf, len, NULL, &err);
 
 	if (ctx->log_file != NULL) {
 		printf("Logging read\n");
 		fprintf(ctx->log_file, "< %s\n", buf);
 	}
-
 	return count;
 }
 
 int aprsis_write(aprsis_ctx *ctx, char *buf, size_t len) {
+	// send a line to the GSocket
+	GError *err;
 	int count = g_socket_send(ctx->skt, buf, len, NULL, &err);
 
 	if (ctx->log_file != NULL) {
@@ -75,6 +79,7 @@ GError *aprsis_connect(aprsis_ctx *ctx) {
 	// connect to an APRS-IS server
 	// return GError
 	
+	ctx->state = APRSIS_CONNECTING;
 	GError *err = NULL;
 	GSocketClient *client = g_socket_client_new();
 	GSocketConnection *conn = g_socket_client_connect_to_host(client, ctx->host, 14580, NULL, &err); // FIXME needs to convert string to int
@@ -86,7 +91,10 @@ GError *aprsis_connect(aprsis_ctx *ctx) {
 		ctx->sockfd = g_socket_get_fd(ctx->skt);
 	}
 
-	if(err) g_message ("%s", err->message);
+	if(err) {
+		g_message ("%s", err->message);
+		ctx->state = APRSIS_DISCONNECTED;
+	}
 	return err;
 }
 
@@ -94,7 +102,6 @@ int aprsis_login(aprsis_ctx *ctx) {
 	// wait for prompt, send filter message
 	char buf[256];
 	int n;
-
 
 	// note that this doesn't *actually* check what the prompt is
 	bzero(&buf, 256);
@@ -205,17 +212,11 @@ static gboolean aprsis_got_packet(GIOChannel *gio, GIOCondition condition, gpoin
 	return TRUE;
 }
 
-
-
 static gboolean aprsis_reconnect(void *ptr) {
 	// called once a second when the timer times out
 	aprsis_ctx *ctx = ptr;
 	printf("*** %s(): \n",__PRETTY_FUNCTION__);
-
-	if (!connected) {
-		printf("restarting\n");
-		start_aprsis(ctx);
-	}
+	start_aprsis(ctx);
 }
 
 static gboolean
@@ -223,9 +224,9 @@ aprsis_io_error(GIOChannel *src, GIOCondition condition, void *ptr)
 {
 	printf("*** %s(): \n",__PRETTY_FUNCTION__);
 	aprsis_ctx *ctx = ptr;
-	connected = FALSE;
+	ctx->state = APRSIS_DISCONNECTED;
 	reconnect_timer = g_timeout_add_seconds(5, aprsis_reconnect, ctx);
-	return FALSE; 
+	return FALSE;
 }
 
 static void start_aprsis_thread(void *ptr) {
@@ -233,7 +234,6 @@ static void start_aprsis_thread(void *ptr) {
     GError *error = NULL;
 	aprsis_ctx *ctx = ptr;
 
-	connected = FALSE;
 	if (!reconnect_timer) reconnect_timer = g_timeout_add_seconds(10, aprsis_reconnect, ctx);
 	
 	if (aprsis_connect(ctx)) {
@@ -251,8 +251,6 @@ static void start_aprsis_thread(void *ptr) {
 	//aprsis_set_filter_string(ctx, "p/M/G/2"); // callsigns beginning with G, M or 2 - UK callsigns, normally
 	//aprsis_set_filter_string(ctx, "p/HB9"); // Swiss callsigns
 
-	
-
 	aprsis_io = g_io_channel_unix_new (ctx->sockfd);
     g_io_channel_set_encoding(aprsis_io, NULL, &error);
     if (!g_io_add_watch (aprsis_io, G_IO_IN, aprsis_got_packet, ctx))
@@ -262,13 +260,14 @@ static void start_aprsis_thread(void *ptr) {
     if (!g_io_add_watch (aprsis_io,  G_IO_ERR | G_IO_HUP, aprsis_io_error, ctx))
         g_error ("Cannot add watch on GIOChannel G_IO_IN");
 
-	connected = TRUE;
+	ctx->state = APRSIS_CONNECTED;
 }
 
 void start_aprsis(aprsis_ctx *ctx) {
 	// prepare the APRS-IS connection thread
 
-	if (connected) return;
+	printf("ctx->state = %d\n", ctx->state);
+	if (ctx->state != APRSIS_DISCONNECTED) return;
 
 	// remove the IO channel and watch
 	if (aprs1) {
@@ -279,14 +278,11 @@ void start_aprsis(aprsis_ctx *ctx) {
 		g_source_remove (reconnect_timer);
 		reconnect_timer = 0;
 	}
-
-	
 	if (aprsis_io) {
 		g_io_channel_unref (aprsis_io);
 		aprsis_io = NULL;
 	}
 	g_thread_create((GThreadFunc) start_aprsis_thread, ctx, FALSE, NULL);
-
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */

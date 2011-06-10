@@ -5,19 +5,17 @@
 
 typedef struct _aprsis_ctx {
     GSocket *skt;
-    
-    int sockfd;
+    guint state;
+	int sockfd;
 	char *host;
-    char *port;
-    char *user;
-    char *pass;
+	char *port;
+	char *user;
+	char *pass;
 
-    double latitude;
-    double longitude;
-    int radius;
-
-    FILE *log_file;
-
+	double latitude;
+	double longitude;
+	int radius;
+	FILE *log_file;
 } aprsis_ctx;
 
 //aprs details structure - enables passing of variables between the properties pop up and the main program
@@ -47,3 +45,5 @@ void aprsis_close(aprsis_ctx *ctx);
 void start_aprsis(aprsis_ctx *ctx);
 
 #endif
+
+/* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
