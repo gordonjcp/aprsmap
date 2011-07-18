@@ -7,9 +7,49 @@
 
 #include <fap.h>
 #include <osm-gps-map.h>
+#include <sqlite3.h>
 
 #include "callbacks.h"
 #include "aprsis.h"
+
+
+G_MODULE_EXPORT int callback(void *NotUsed, int argc, char **argv, char **azColName){
+    int i;
+    for(i=0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    return 0;
+  }
+
+G_MODULE_EXPORT int call_callback(void *NotUsed, int argc, char **argv, char **azColName){
+    int i;
+    for(i=0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    return 0;
+  }
+
+G_MODULE_EXPORT int user_callback(aprs_details *properties, int argc, char **argv, char **azColName){
+    int i;
+    for(i=0; i<argc; i++){
+	if (strcmp (azColName[i],"lat") == 0) {
+	 properties->lat = g_ascii_strtod (argv[i],NULL);
+	 //printf("%f\n", properties->lat); //debug
+	 printf("Lat Data Loaded\n");	
+	} else if (strcmp (azColName[i],"lon") == 0) {
+	properties->lon = g_ascii_strtod (argv[i],NULL);
+	//printf("%f\n", properties->lon); //debug
+	printf("Lon Data Loaded\n");
+	}
+
+	//osm_gps_map_set_center_and_zoom(map,properties->lat,properties->lon,5);
+    }
+		
+    printf("\n");
+    return 0;
+  }
 
 G_MODULE_EXPORT gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data)

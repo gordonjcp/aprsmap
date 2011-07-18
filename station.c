@@ -4,7 +4,7 @@
 #include <string.h>
 #include <fap.h>
 #include <osm-gps-map.h>
-
+#include <sqlite3.h>
 #include <math.h>
 
 #include "station.h"
@@ -15,7 +15,9 @@ extern cairo_surface_t *g_symbol_image2;
 
 extern GHashTable *stations;
 extern OsmGpsMap *map;
-
+extern rc;
+extern *zErrMsg = 0;
+extern sqlite3 *db;
 // workaround for libfap bug
 /// The magic constant.
 #define PI 3.14159265
@@ -271,7 +273,18 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			station->course = gjcp_direction(station->lon, station->lat, *(packet->longitude), *(packet->latitude));
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
-
+	char zlat[10]; char zlon[10]; char zcourse[10];
+ 	int n, m, o,rc;
+	n=sprintf(zlat,"%f",station->lat);   
+	m=sprintf(zlon,"%f",station->lon);
+	o=sprintf(zcourse, "%f", station->course);
+	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",packet->src_callsign,packet->object_or_item_name,zcourse,zlon,zlat);
+	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+	sqlite3_free(zSQL);
 			// we may need to create a track, then
 			if (!station->track) {
 				station->track = osm_gps_map_track_new();
@@ -307,8 +320,19 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			g_message("got a position packet, with no valid position. ignoring.");
 		}
 	}
-}
 
+	char zlat[10]; char zlon[10]; char zcourse[10];
+ 	int n, m, o,rc;
+	n=sprintf(zlat,"%f",station->lat);   
+	m=sprintf(zlon,"%f",station->lon);
+	o=sprintf(zcourse, "%f", station->course);
+	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",packet->src_callsign,packet->object_or_item_name,zcourse,zlon,zlat);
+	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+}
+}
 gboolean process_packet(gchar *msg) {
 	// process an incoming packet, and call a suitable function
 	fap_packet_t *packet;
@@ -342,5 +366,4 @@ gboolean process_packet(gchar *msg) {
 	}
 	g_hash_table_replace(stations, station->callsign, station);
 }
-
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */

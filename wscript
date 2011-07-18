@@ -21,13 +21,14 @@ def configure(conf):
     conf.check_cfg(package='gmodule-2.0', uselib_store='GMODULE', atleast_version='2.18.0', args='--cflags --libs')
     conf.check_cfg(package = 'osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
     conf.check_cfg(package="libfap", uselib_store="FAP", atleast_version = '1.1', args = '--cflags --libs')
+    conf.check_cfg(package="sqlite3", uselib_store="SQL", atleast_version = '3', args = '--cflags --libs')
 def build(bld):
     # aprsmap
     bld(
         features = 'c cprogram',
         source = ['aprsis.c', 'callbacks.c', 'mapviewer.c', 'station.c'],
         target = 'aprsmap',
-        uselib = "GTK OSMGPSMAP FAP GMODULE",
+        uselib = "GTK OSMGPSMAP FAP GMODULE SQL",
         includes = '. /usr/include')
 
 

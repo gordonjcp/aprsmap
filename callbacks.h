@@ -11,6 +11,13 @@ extern GtkEntry *rangeent;
 extern GtkWidget *about;
 extern GtkWidget *popup;
 extern GtkComboBox *server;
+extern sqlite3 *db;
+
+G_MODULE_EXPORT int callback(void *NotUsed, int argc, char **argv, char **azColName);
+
+G_MODULE_EXPORT int call_callback(void *NotUsed, int argc, char **argv, char **azColName);
+
+G_MODULE_EXPORT int user_callback(aprs_details *properties, int argc, char **argv, char **azColName);
 
 G_MODULE_EXPORT gboolean
 on_button_press_event (GtkWidget *widget, GdkEventButton *event, gpointer user_data);

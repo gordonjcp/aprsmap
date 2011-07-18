@@ -26,6 +26,7 @@
 
 #include <fap.h>
 #include <osm-gps-map.h>
+#include <sqlite3.h>
 
 #include "aprsis.h"
 #include "station.h"
@@ -39,6 +40,8 @@ GtkEntry *rangeent;
 GtkWidget *about;
 GtkWidget *popup;
 GtkComboBox *server;
+sqlite3 *db;
+int rc;
 
 GdkPixbuf *g_star_image = NULL;
 cairo_surface_t *g_symbol_image = NULL;
@@ -111,8 +114,19 @@ main (int argc, char **argv)
     GError *error = NULL;
     GOptionContext *context;
 	GIOChannel *gio_read;
-
-
+	 char *zErrMsg = 0;
+	rc = sqlite3_open("aprs.db", &db);
+	if( rc ){
+      fprintf(stderr, "Can't open database: %s\n",sqlite3_errmsg(db));
+      sqlite3_close(db);
+      exit(1);
+    }
+	rc = sqlite3_exec(db, "SELECT * FROM call_data", call_callback, 0, &zErrMsg);
+  if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+    
     context = g_option_context_new ("- Map browser");
     g_option_context_set_help_enabled(context, FALSE);
     g_option_context_add_main_entries (context, entries, NULL);
@@ -135,12 +149,19 @@ main (int argc, char **argv)
 
 	//set variables properties->lat, properties->lon, properties->range, properties->ctx
 	aprs_details *properties = aprs_details_new(55.00,-4.00,600,ctx); 
-
+	
 	if (packet_log_file != NULL) {
 		FILE *log = fopen(packet_log_file, "w");
 		aprsis_set_log(ctx, log);
 	}
+	//get this in before GTK starts - maybe loads faster if after?
+	/*rc = sqlite3_exec(db, "SELECT * FROM user_data", user_callback, properties, &zErrMsg);
+  if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }*/
 
+	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
@@ -287,11 +308,42 @@ g_signal_connect (
 	//gtk_dialog_run (GTK_DIALOG(data->about) );
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MESSAGE, g_log_default_handler, NULL);
+	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
+	printf("Filter Data Set\n");
     gtk_main ();
+	
+	/*tidy up sqlite, save user prefs.
 
+		 rc = sqlite3_exec(db, "DELETE FROM user_data", callback, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+
+	rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS user_data (lat NUMERIC, lon NUMERIC)", callback, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+	
+	char zlat[10]; char zlon[10];
+	int n, m;
+	n=sprintf(zlat,"%f",properties->lat);   
+	printf("%s\n",zlat);
+	m=sprintf(zlon,"%f",properties->lon);
+	printf("%s\n",zlon);
+	char *zSQL = sqlite3_mprintf("INSERT INTO user_data (lat, lon) VALUES (%Q, %Q)",zlat,zlon);
+	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+	sqlite3_free(zSQL);*/
+	sqlite3_close(db);
 
     fap_cleanup();
     aprsis_close(ctx);
+	
     return(0);
 }
 
