@@ -273,11 +273,14 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			station->course = gjcp_direction(station->lon, station->lat, *(packet->longitude), *(packet->latitude));
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
+	printf("testicule");
+	if (station->lat && station->lon && packet->src_callsign) {
 	char zlat[10]; char zlon[10]; char zcourse[10];
  	int n, m, o,rc;
 	n=sprintf(zlat,"%f",station->lat);   
 	m=sprintf(zlon,"%f",station->lon);
 	o=sprintf(zcourse, "%f", station->course);
+
 	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",packet->src_callsign,packet->object_or_item_name,zcourse,zlon,zlat);
 	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
 	if( rc!=SQLITE_OK ){
@@ -285,6 +288,11 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
       sqlite3_free(zErrMsg);
     }
 	sqlite3_free(zSQL);
+	printf("NotFail\n"); }
+else {
+	printf("Fail\n");
+}
+/*write_to_db(station->lat, station->lon, station->course, packet->src_callsign, packet->object_or_item_name);*/
 			// we may need to create a track, then
 			if (!station->track) {
 				station->track = osm_gps_map_track_new();
@@ -321,6 +329,9 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 		}
 	}
 
+	if (station->lat && station->lon && packet->src_callsign) {
+	printf("pass\n");
+	printf("%f\n,%f\n,%s\n",station->lat, station->lon, packet->src_callsign);
 	char zlat[10]; char zlon[10]; char zcourse[10];
  	int n, m, o,rc;
 	n=sprintf(zlat,"%f",station->lat);   
@@ -331,6 +342,10 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	if( rc!=SQLITE_OK ){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
+    }
+	sqlite3_free(zSQL);
+} else {
+printf("fail");
 }
 }
 gboolean process_packet(gchar *msg) {
@@ -366,4 +381,18 @@ gboolean process_packet(gchar *msg) {
 	}
 	g_hash_table_replace(stations, station->callsign, station);
 }
+/*void write_to_db(float latitude, float longitude, float course, char call, char object) {
+	char zlat[10]; char zlon[10]; char zcourse[10];
+ 	int n, m, o,rc;
+	n=sprintf(zlat,"%f",latitude);   
+	m=sprintf(zlon,"%f",longitude);
+	o=sprintf(zcourse, "%f", course);
+	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",call,object,zcourse,zlon,zlat);
+	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+	sqlite3_free(zSQL);
+}*/
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
