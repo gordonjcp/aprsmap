@@ -320,7 +320,7 @@ else {
 
 	if (station->lat && station->lon && packet->src_callsign) {
 	printf("pass\n");
-	printf("%f\n,%f\n,%s\n",station->lat, station->lon, packet->src_callsign);
+	printf("Input Data: %f, %f, %s\n",station->lat, station->lon, packet->src_callsign);
 	write_to_db(station->lat, station->lon, station->course, packet->src_callsign, packet->object_or_item_name);
 
 } else {
@@ -362,13 +362,13 @@ gboolean process_packet(gchar *msg) {
 }
 void write_to_db(gdouble latitude, gdouble longitude, float course, char *call, char *object) {
 
-	char zlat[10]; char zlon[10]; char zcourse[10];
+	char zlat[15]; char zlon[15]; char zcourse[10];
  	int n, m, o,rc;
 	n=sprintf(zlat,"%f",latitude);   
 	m=sprintf(zlon,"%f",longitude);
 	o=sprintf(zcourse, "%f", course);
 
-printf("%s\n,%s\n,%s\n",zlat, zlon, call);
+printf("\n Calculated Data: %s, %s, %s\n",zlat,zlon,call);
 
 	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",call,object,zcourse,zlon,zlat);
 	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
