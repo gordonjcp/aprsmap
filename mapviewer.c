@@ -47,6 +47,7 @@ GdkPixbuf *g_star_image = NULL;
 cairo_surface_t *g_symbol_image = NULL;
 cairo_surface_t *g_symbol_image2 = NULL;
 OsmGpsMapImage *g_last_image = NULL;
+GtkStatusbar *statusbar = NULL;
 
 GHashTable *stations;
 
@@ -71,6 +72,9 @@ static char *opt_cache_base_dir = NULL;
 static char *packet_log_file = NULL;
 static char *aprsis_server = NULL;
 static char *aprsis_port = NULL;
+
+static guint st_ctx;
+
 static GOptionEntry entries[] =
 {
 	{ "friendly-cache", 'f', 0, G_OPTION_ARG_NONE, &opt_friendly_cache, "Store maps using friendly cache style (source name)", NULL },
@@ -83,6 +87,22 @@ static GOptionEntry entries[] =
 	{ "packet-log-file", 'l', 0, G_OPTION_ARG_FILENAME, &packet_log_file, "Log network IO to a file", "FILE" },
   { NULL }
 };
+
+
+
+static gboolean *aprsmap_clear_status() {
+	// remove message from the statusbar when the timer runs out
+	gtk_statusbar_pop(statusbar, st_ctx);
+	return FALSE;
+}
+
+
+void aprsmap_set_status(gchar *msg) {
+	// put new message on the status bar
+	gtk_statusbar_pop(statusbar, st_ctx);
+	gtk_statusbar_push(statusbar, st_ctx, msg);
+	g_timeout_add_seconds(3, (GSourceFunc)aprsmap_clear_status, NULL);
+}
 
 
 static void
@@ -261,15 +281,6 @@ main (int argc, char **argv)
 				G_CALLBACK (on_properties_clicked_event), properties);
 	g_signal_connect (G_OBJECT (map), "button-press-event",
                 G_CALLBACK (on_button_press_event), (gpointer) map);
-   
-
- /*  potentially unneccesary callbacks.
-g_signal_connect (
-				G_OBJECT (map), "button-release-event",
-                G_CALLBACK (on_button_release_event),(gpointer) gtk_builder_get_object(builder, "text_entry"));
-   /* g_signal_connect (G_OBJECT (map), "notify::tiles-queued",
-                G_CALLBACK (on_tiles_queued_changed),
-                (gpointer) gtk_builder_get_object(builder, "cache_label")); */
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "window1"));
 
@@ -294,6 +305,9 @@ g_signal_connect (
                     g_cclosure_new(gtk_main_quit, NULL, NULL));
     gtk_window_add_accel_group(GTK_WINDOW(widget), ag);
 
+	statusbar = GTK_STATUSBAR(gtk_builder_get_object(builder, "statusbar1"));
+	st_ctx = gtk_statusbar_get_context_id(statusbar, "connect");
+	
 	//Set up GTK_ENTRY boxes in the preferences pop up
 	latent = GTK_ENTRY(gtk_builder_get_object(builder, "declat"));
 	lonent = GTK_ENTRY(gtk_builder_get_object(builder, "declon"));
@@ -305,7 +319,7 @@ g_signal_connect (
 	g_object_unref( G_OBJECT( builder ) );
 
     gtk_widget_show_all (widget);
-	//gtk_dialog_run (GTK_DIALOG(data->about) );
+
     //g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MASK, g_log_default_handler, NULL);
     g_log_set_handler ("OsmGpsMap", G_LOG_LEVEL_MESSAGE, g_log_default_handler, NULL);
 	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);

@@ -231,6 +231,7 @@ static APRSMapStation* get_station(fap_packet_t *packet) {
 	station = g_hash_table_lookup(stations, name);
 	if (!station) {
 //		printf("new station %s\n", name);
+		aprsmap_set_status(g_strdup_printf("New station %s...", name));
 		station = g_new0(APRSMapStation, 1);
 		station->callsign = g_strdup(name);
 	}
@@ -343,7 +344,7 @@ gboolean process_packet(gchar *msg) {
 	}
 	
 	type = *(packet->type);
-	printf("packet type is %s\n", packet_type[type]);
+	printf("%s, %s packet\n", packet->src_callsign, packet_type[type]);
 
 	// see if we have a record of this, or not
 	station = get_station(packet);
