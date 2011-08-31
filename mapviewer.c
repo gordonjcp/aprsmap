@@ -135,14 +135,16 @@ main (int argc, char **argv)
     GOptionContext *context;
 	GIOChannel *gio_read;
 	 char *zErrMsg = 0;
+	//create and/or open sqlite3db
 	rc = sqlite3_open("aprs.db", &db);
 	if( rc ){
       fprintf(stderr, "Can't open database: %s\n",sqlite3_errmsg(db));
       sqlite3_close(db);
       exit(1);
     }
-	rc = sqlite3_exec(db, "SELECT * FROM call_data", call_callback, 0, &zErrMsg);
-  if( rc!=SQLITE_OK ){
+	//create and/or open table
+	rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS call_data (call TEXT, object TEXT, course NUMERIC, lat NUMERIC, lon NUMERIC)", callback, 0, &zErrMsg);
+	if( rc!=SQLITE_OK ){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);
     }
@@ -326,33 +328,6 @@ main (int argc, char **argv)
 	printf("Filter Data Set\n");
     gtk_main ();
 	
-	/*tidy up sqlite, save user prefs.
-
-		 rc = sqlite3_exec(db, "DELETE FROM user_data", callback, 0, &zErrMsg);
-	if( rc!=SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-    }
-
-	rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS user_data (lat NUMERIC, lon NUMERIC)", callback, 0, &zErrMsg);
-	if( rc!=SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-    }
-	
-	char zlat[10]; char zlon[10];
-	int n, m;
-	n=sprintf(zlat,"%f",properties->lat);   
-	printf("%s\n",zlat);
-	m=sprintf(zlon,"%f",properties->lon);
-	printf("%s\n",zlon);
-	char *zSQL = sqlite3_mprintf("INSERT INTO user_data (lat, lon) VALUES (%Q, %Q)",zlat,zlon);
-	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
-	if( rc!=SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-    }
-	sqlite3_free(zSQL);*/
 	sqlite3_close(db);
 
     fap_cleanup();
