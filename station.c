@@ -6,7 +6,7 @@
 #include <osm-gps-map.h>
 #include <sqlite3.h>
 #include <math.h>
-
+#include <time.h>
 #include "station.h"
 
 extern GdkPixbuf *g_star_image;
@@ -276,7 +276,8 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			station->lon = *(packet->longitude);
 
 	if (station->lat && station->lon && packet->src_callsign) {
-		write_to_db(station->lat, station->lon, station->course, packet->src_callsign, packet->object_or_item_name);
+		write_to_db(station->lat, station->lon, station->course, 
+packet->src_callsign, packet->object_or_item_name, packet->timestamp);
 
 	printf("NotFail\n"); }
 else {
@@ -320,12 +321,10 @@ else {
 	}
 
 	if (station->lat && station->lon && packet->src_callsign) {
-	printf("pass\n");
-	printf("Input Data: %f, %f, %s\n",station->lat, station->lon, packet->src_callsign);
-	write_to_db(station->lat, station->lon, station->course, packet->src_callsign, packet->object_or_item_name);
+	
+	write_to_db(station->lat, station->lon, station->course, packet->src_callsign, 
+packet->object_or_item_name, packet->timestamp);
 
-} else {
-printf("fail");
 }
 }
 gboolean process_packet(gchar *msg) {
@@ -361,17 +360,17 @@ gboolean process_packet(gchar *msg) {
 	}
 	g_hash_table_replace(stations, station->callsign, station);
 }
-void write_to_db(gdouble latitude, gdouble longitude, float course, char *call, char *object) {
+void write_to_db(gdouble latitude, gdouble longitude, float course, char *call, char 
+*object, time_t *timestamp) {
 
-	char zlat[15]; char zlon[15]; char zcourse[10];
- 	int n, m, o,rc;
+	char zlat[20]; char zlon[20]; char zcourse[10]; char ztime[30];
+ 	int n, m, o, t,rc;
 	n=sprintf(zlat,"%f",latitude);   
 	m=sprintf(zlon,"%f",longitude);
 	o=sprintf(zcourse, "%f", course);
+        t=sprintf(ztime, "%u", timestamp);
 
-printf("\n Calculated Data: %s, %s, %s\n",zlat,zlon,call);
-
-	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat) VALUES (%Q,%Q,%Q,%Q,%Q)",call,object,zcourse,zlon,zlat);
+	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat, time) VALUES (%Q,%Q,%Q,%Q,%Q,%Q)",call,object,zcourse,zlon,zlat,ztime);
 	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
 	if( rc!=SQLITE_OK ){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);

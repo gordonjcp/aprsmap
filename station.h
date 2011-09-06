@@ -25,6 +25,7 @@ typedef struct {
 } APRSMapStation;
 
 gboolean process_packet(gchar *msg);
-void write_to_db(double latitude, double longitude, float course, char *call, char *object);
+void write_to_db(double latitude, double longitude, float course, char *call, char 
+*object, time_t *timestamp);
 #endif
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
