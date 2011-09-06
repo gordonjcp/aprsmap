@@ -2,3 +2,4 @@ build
 .waf*
 .lock-wscript
 .lock-wafbuild
+aprs.db
