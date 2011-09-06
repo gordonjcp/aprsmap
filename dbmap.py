@@ -149,7 +149,15 @@ class UI(gtk.Window):
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sw.add(treeview)
         sw.set_size_request(200,-1)
-        hbox2.pack_start(sw, expand=False)      
+        
+        vbox2 = gtk.VBox(False, 0)
+        
+        calendar = gtk.Calendar()
+        vbox2.pack_start(calendar, False)
+        vbox2.pack_start(sw)
+        
+        
+        hbox2.pack_start(vbox2, expand=False)      
         hbox2.pack_start(self.osm)
         self.vbox.pack_start(hbox2)
         
