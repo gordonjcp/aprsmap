@@ -34,6 +34,19 @@ void mainwindow() {
     gtk_builder_add_from_file (builder, "aprsmap.ui", &error);
     if (error)
         g_error ("ERROR: %s\n", error->message);
+       
+    map = g_object_new (OSM_TYPE_GPS_MAP,
+        //"map-source",opt_map_provider,
+        //"tile-cache",cachedir,
+        //"tile-cache-base", cachebasedir,
+        //"proxy-uri",g_getenv("http_proxy"),
+        NULL);
+
+        
+    gtk_box_pack_start (
+        GTK_BOX(gtk_builder_get_object(builder, "map_box")),
+        GTK_WIDGET(map), TRUE, TRUE, 0);
+  
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "mainwindow"));
     gtk_widget_show_all (widget);
