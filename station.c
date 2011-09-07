@@ -7,6 +7,7 @@
 #include <sqlite3.h>
 #include <math.h>
 #include <time.h>
+#include <errno.h>
 #include "station.h"
 
 extern GdkPixbuf *g_star_image;
@@ -16,7 +17,6 @@ extern cairo_surface_t *g_symbol_image2;
 extern GHashTable *stations;
 extern OsmGpsMap *map;
 extern rc;
-extern *zErrMsg = 0;
 extern sqlite3 *db;
 // workaround for libfap bug
 /// The magic constant.
@@ -26,6 +26,7 @@ extern sqlite3 *db;
 /// Radians to degrees.
 #define RAD2DEG(x) (x*(180/PI))
 
+char *zErrMsg = 0;
 
 char *packet_type[] = {
 
@@ -277,6 +278,10 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	char test[80];
 	struct tm *ts;
 	ts = localtime(packet->timestamp);
+	if (ts == NULL) {
+		printf("Failed to parse timestamp %d: errno is %d\n", packet->timestamp, errno);
+		return;
+	}
 	strftime(test, sizeof(test), "%a %Y-%m-%d %H:%M:%S %Z", ts);
 		printf("%s\n", test );
 	if (station->lat && station->lon && packet->src_callsign) {
