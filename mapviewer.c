@@ -143,7 +143,7 @@ main (int argc, char **argv)
       exit(1);
     }
 	//create and/or open table
-	rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS call_data (call TEXT, object TEXT, course NUMERIC, lat NUMERIC, lon NUMERIC)", callback, 0, &zErrMsg);
+	rc = sqlite3_exec(db, "CREATE TABLE IF NOT EXISTS call_data (call TEXT, object TEXT, course NUMERIC, lat NUMERIC, lon NUMERIC, time NUMERIC)", callback, 0, &zErrMsg);
 	if( rc!=SQLITE_OK ){
       fprintf(stderr, "SQL error: %s\n", zErrMsg);
       sqlite3_free(zErrMsg);

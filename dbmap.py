@@ -64,7 +64,7 @@ class Database():
         self.conn = sqlite3.connect("./aprs.db")
         self.crs = self.conn.cursor()
     def get_stations(self):
-        self.crs.execute("SELECT DISTINCT call FROM call_data;")
+        self.crs.execute("SELECT DISTINCT call, count(call) FROM call_data GROUP BY call;")
         return self.crs.fetchall()
     def get_points(self, station):
         self.crs.execute("SELECT lat,lon, call FROM call_data WHERE call = ?;", (station,))
@@ -125,17 +125,22 @@ class UI(gtk.Window):
 
 
         # liststore for stations
-        lstore = gtk.ListStore(str)
+        lstore = gtk.ListStore(str, int)
         s = db.get_stations()
         for i in s:
-            lstore.append([i[0]])
+            lstore.append([i[0], i[1]])
         treeview = gtk.TreeView(lstore)
         rendererText = gtk.CellRendererText()
         column = gtk.TreeViewColumn("Station", rendererText, text=0)
         column.set_sort_column_id(0)  
-        column.set_min_width(150)
+        column.set_min_width(100)
         treeview.append_column(column)
         
+        column = gtk.TreeViewColumn("Points", rendererText, text=1)
+        column.set_sort_column_id(1)  
+        column.set_min_width(50)
+        treeview.append_column(column)
+
         treeview.columns_autosize()
         treeview.connect("row-activated", self.on_activated)
                 
@@ -143,8 +148,16 @@ class UI(gtk.Window):
         sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
         sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         sw.add(treeview)
-        sw.set_size_request(140,-1)
-        hbox2.pack_start(sw, expand=False)      
+        sw.set_size_request(200,-1)
+        
+        vbox2 = gtk.VBox(False, 0)
+        
+        calendar = gtk.Calendar()
+        vbox2.pack_start(calendar, False)
+        vbox2.pack_start(sw)
+        
+        
+        hbox2.pack_start(vbox2, expand=False)      
         hbox2.pack_start(self.osm)
         self.vbox.pack_start(hbox2)
         
