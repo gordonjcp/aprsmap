@@ -31,4 +31,12 @@ def build(bld):
         uselib = "GTK OSMGPSMAP FAP GMODULE SQL",
         includes = '. /usr/include')
 
+    bld(
+        features = 'c cprogram',
+        source = ['aprsmap.c', 'mapgui.c'],
+        target = 'aprsnew',
+        uselib = "GTK OSMGPSMAP",
+        includes = '. /usr/include')
+
+
 
