@@ -274,7 +274,11 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 			station->course = gjcp_direction(station->lon, station->lat, *(packet->longitude), *(packet->latitude));
 			station->lat = *(packet->latitude);
 			station->lon = *(packet->longitude);
-
+	char test[80];
+	struct tm *ts;
+	ts = localtime(packet->timestamp);
+	strftime(test, sizeof(test), "%a %Y-%m-%d %H:%M:%S %Z", ts);
+		printf("%s\n", test );
 	if (station->lat && station->lon && packet->src_callsign) {
 		write_to_db(station->lat, station->lon, station->course, 
 packet->src_callsign, packet->object_or_item_name, packet->timestamp);
@@ -321,7 +325,13 @@ else {
 	}
 
 	if (station->lat && station->lon && packet->src_callsign) {
-	
+		if (packet->timestamp) {
+	char test[80];
+	struct tm *ts;
+	ts = localtime(packet->timestamp);
+	strftime(test, sizeof(test), "%a %Y-%m-%d %H:%M:%S %Z", ts);
+		printf("%s\n", test );
+	}
 	write_to_db(station->lat, station->lon, station->course, packet->src_callsign, 
 packet->object_or_item_name, packet->timestamp);
 
@@ -363,7 +373,7 @@ gboolean process_packet(gchar *msg) {
 void write_to_db(gdouble latitude, gdouble longitude, float course, char *call, char 
 *object, time_t *timestamp) {
 
-	char zlat[20]; char zlon[20]; char zcourse[10]; char ztime[30];
+	char zlat[20]; char zlon[20]; char zcourse[10]; char ztime[80];
  	int n, m, o, t,rc;
 	n=sprintf(zlat,"%f",latitude);   
 	m=sprintf(zlon,"%f",longitude);
