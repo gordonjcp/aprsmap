@@ -36,18 +36,16 @@ void on_close(GtkWidget *widget, gpointer user_data) {
     gtk_main_quit();
 }
 
-gboolean on_menuitem_prefs_activate() {
+G_MODULE_EXPORT void on_menuitem_prefs_activate( GtkImageMenuItem *menu,
+              GtkWidget *prefs_window ) {
 	APRSMap_Settings *t_prefs;
 	t_prefs = g_slice_copy(sizeof(APRSMap_Settings), conf);
 	
 	printf("t_prefs->lon = %f\n", t_prefs->lon);
 	gtk_widget_show(prefs_window);
 	
-	
-	printf("%x\n", prefs_window);
-	
 	g_slice_free(APRSMap_Settings, t_prefs);
-	return FALSE;
+
 }
 
 void set_map_home(APRSMap_Settings *conf) {
