@@ -26,15 +26,15 @@ def build(bld):
     # aprsmap
     bld(
         features = 'c cprogram',
-        source = ['aprsis.c', 'callbacks.c', 'mapviewer.c', 'station.c'],
-        target = 'aprsmap',
+        source = ['old/aprsis.c', 'old/callbacks.c', 'old/mapviewer.c', 'old/station.c'],
+        target = 'aprsmap-old',
         uselib = "GTK OSMGPSMAP FAP GMODULE SQL",
         includes = '. /usr/include')
 
     bld(
         features = 'c cprogram',
         source = ['aprsmap.c', 'mapgui.c'],
-        target = 'aprsnew',
+        target = 'aprsmap',
         uselib = "GTK OSMGPSMAP",
         includes = '. /usr/include')
 
