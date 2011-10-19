@@ -28,7 +28,7 @@
 #include "mapgui.h"
 
 
-static GtkWidget *prefs;
+static GtkWidget *prefs_window;
 
 void on_close(GtkWidget *widget, gpointer user_data) {
 	printf("on_close()\n");
@@ -36,15 +36,18 @@ void on_close(GtkWidget *widget, gpointer user_data) {
     gtk_main_quit();
 }
 
-void on_menuitem_prefs_activate() {
+gboolean on_menuitem_prefs_activate() {
 	APRSMap_Settings *t_prefs;
-	
 	t_prefs = g_slice_copy(sizeof(APRSMap_Settings), conf);
 	
 	printf("t_prefs->lon = %f\n", t_prefs->lon);
-	gtk_window_present(GTK_WINDOW(prefs));
+	gtk_widget_show(prefs_window);
+	
+	
+	printf("%x\n", prefs_window);
 	
 	g_slice_free(APRSMap_Settings, t_prefs);
+	return FALSE;
 }
 
 void set_map_home(APRSMap_Settings *conf) {
@@ -75,8 +78,8 @@ void mainwindow() {
   
 
     widget = GTK_WIDGET(gtk_builder_get_object(builder, "main_window"));
-    
-    prefs = GTK_WIDGET(gtk_builder_get_object(builder, "prefs_window"));
+   	prefs_window = GTK_WIDGET(gtk_builder_get_object(builder, "prefs_window"));
+
 
     gtk_widget_show_all (widget);
 
