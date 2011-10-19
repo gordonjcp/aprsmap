@@ -21,15 +21,44 @@
 	along with aprsmap.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <gtk/gtk.h>
 #include <aprsmap.h>
 #include <mapgui.h>
+
+int load_settings()
+{
+  GKeyFile *keyfile;
+  GKeyFileFlags flags;
+  GError *error = NULL;
+  gsize length;
+  
+  /* Create a new GKeyFile object and a bitwise list of flags. */
+  keyfile = g_key_file_new ();
+  flags = G_KEY_FILE_KEEP_COMMENTS | G_KEY_FILE_KEEP_TRANSLATIONS;
+  
+  /* Load the GKeyFile from keyfile.conf or return. */
+  if (!g_key_file_load_from_file (keyfile, "settings.conf", flags, &error))
+  {
+    g_error (error->message);
+    return -1;
+  }
+    conf = g_slice_new (APRSMap_Settings);
+    
+	conf->lat = g_key_file_get_double(keyfile, "Home", "lat", NULL);
+	conf->lon = g_key_file_get_double(keyfile, "Home", "lon", NULL);
+	conf->zoom = g_key_file_get_integer(keyfile, "Home", "zoom", NULL);
+	set_map_home(conf);
+}
+ 
 int main(int argc, char **argv) {
 
     g_thread_init(NULL);
     gtk_init (&argc, &argv);
-
     // by the time we get this far, everything else should be running
     // all it remains to do is fire up the main loop
     mainwindow();
+    
+    load_settings();
+    
     gtk_main();
 }

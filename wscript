@@ -35,7 +35,7 @@ def build(bld):
         features = 'c cprogram',
         source = ['aprsmap.c', 'mapgui.c'],
         target = 'aprsmap',
-        uselib = "GTK OSMGPSMAP",
+        uselib = "GTK GMODULE OSMGPSMAP",
         includes = '. /usr/include')
 
 
