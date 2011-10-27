@@ -29,6 +29,7 @@
 
 
 static GtkWidget *prefs_window;
+static APRSMap_Settings *t_prefs;
 
 void on_close(GtkWidget *widget, gpointer user_data) {
 	printf("on_close()\n");
@@ -37,14 +38,37 @@ void on_close(GtkWidget *widget, gpointer user_data) {
 }
 
 G_MODULE_EXPORT void on_menuitem_prefs_activate() {
-	APRSMap_Settings *t_prefs;
+	char buf[20];
 	t_prefs = g_slice_copy(sizeof(APRSMap_Settings), conf);
 	
 	printf("t_prefs->lon = %f\n", t_prefs->lon);
+	
+	sprintf(buf,"%f", t_prefs->lat);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "lat_entry")), buf);
+	sprintf(buf,"%f", t_prefs->lon);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "lon_entry")), buf);
+	sprintf(buf,"%d", t_prefs->zoom);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "zoom_entry")), buf);
+	
 	gtk_widget_show(prefs_window);
 	
 	g_slice_free(APRSMap_Settings, t_prefs);
 
+}
+
+G_MODULE_EXPORT void on_sethome_clicked() {
+	gfloat lat, lon;
+	gint zoom;
+	char buf[20];
+	
+	g_object_get(map, "latitude", &lat, "longitude", &lon, "zoom", &zoom, NULL);
+	
+	sprintf(buf,"%f", lat);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "lat_entry")), buf);
+	sprintf(buf,"%f", lon);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "lon_entry")), buf);
+	sprintf(buf,"%d", zoom);
+	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "zoom_entry")), buf);
 }
 
 void set_map_home(APRSMap_Settings *conf) {

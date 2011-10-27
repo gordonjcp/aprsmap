@@ -322,7 +322,7 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Latitude</property>
+                                <property name="label" translatable="yes">Longitude</property>
                               </object>
                               <packing>
                                 <property name="top_attach">1</property>
@@ -347,7 +347,8 @@
                                 <property name="use_action_appearance">False</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="receives_default">True</property>
+                                <property name="receives_default">False</property>
+                                <signal name="clicked" handler="on_sethome_clicked" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -361,12 +362,12 @@
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="xalign">0</property>
-                                <property name="label" translatable="yes">Longitude</property>
+                                <property name="label" translatable="yes">Latitude</property>
                                 <property name="track_visited_links">False</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry1">
+                              <object class="GtkEntry" id="lat_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">●</property>
@@ -382,7 +383,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry2">
+                              <object class="GtkEntry" id="lon_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">●</property>
@@ -400,7 +401,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="entry3">
+                              <object class="GtkEntry" id="zoom_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="invisible_char">●</property>
