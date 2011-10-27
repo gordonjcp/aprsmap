@@ -52,7 +52,7 @@ G_MODULE_EXPORT void on_menuitem_prefs_activate() {
 	
 	gtk_widget_show(prefs_window);
 	
-	g_slice_free(APRSMap_Settings, t_prefs);
+	//
 
 }
 
@@ -69,6 +69,70 @@ G_MODULE_EXPORT void on_sethome_clicked() {
 	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "lon_entry")), buf);
 	sprintf(buf,"%d", zoom);
 	gtk_entry_set_text(GTK_ENTRY(gtk_builder_get_object(builder, "zoom_entry")), buf);
+}
+
+G_MODULE_EXPORT void on_prefs_cancel_clicked() {
+	printf("cancelled\n");
+	g_slice_free(APRSMap_Settings, t_prefs);
+	gtk_widget_hide(prefs_window);	
+}
+
+G_MODULE_EXPORT void on_prefs_ok_clicked() {
+	printf("ok\n");
+	const gchar *buf;
+	
+	
+	GKeyFile *keyfile;
+    GError *error = NULL;
+    gsize *length;
+    guint group, key;
+    	
+	APRSMap_Settings *t;
+	
+	t = conf;
+	conf = t_prefs;
+	
+	buf = gtk_entry_get_text(GTK_ENTRY(gtk_builder_get_object(builder, "lat_entry")));
+	conf->lat = g_strtod(buf, NULL);
+	
+	buf = gtk_entry_get_text(GTK_ENTRY(gtk_builder_get_object(builder, "lon_entry")));
+	conf->lon = g_strtod(buf, NULL);
+
+	buf = gtk_entry_get_text(GTK_ENTRY(gtk_builder_get_object(builder, "zoom_entry")));
+	conf->zoom = atoi(buf);
+
+	g_slice_free(APRSMap_Settings, t);
+	  keyfile = g_key_file_new ();
+printf("doing key file thing\n");
+    if(!g_key_file_load_from_file(keyfile,
+                                  "settings.conf",
+                                  G_KEY_FILE_KEEP_COMMENTS | 
+                                  G_KEY_FILE_KEEP_TRANSLATIONS,
+                                  &error))
+    {
+		printf("g_debug\n");
+        g_debug("%s", error->message);
+    }
+    else
+    {	
+    printf("setting values\n");
+	g_key_file_set_double(keyfile, "Home", "lat", conf->lat);
+	g_key_file_set_double(keyfile, "Home", "lon", conf->lon);
+	g_key_file_set_integer(keyfile, "Home", "zoom", conf->zoom);
+
+	}
+	
+	gchar *f;
+	
+	printf("about to do a keyfile");
+	f = g_key_file_to_data(keyfile, length, &error);
+	printf("(hello)\n");
+	printf("%s\n",f);
+	printf("about to free\n");
+	g_free(f);
+	
+	gtk_widget_hide(prefs_window);
+	printf("%f\n", conf->lat);
 }
 
 void set_map_home(APRSMap_Settings *conf) {

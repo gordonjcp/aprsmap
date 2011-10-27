@@ -47,6 +47,9 @@ int load_settings()
 	conf->lat = g_key_file_get_double(keyfile, "Home", "lat", NULL);
 	conf->lon = g_key_file_get_double(keyfile, "Home", "lon", NULL);
 	conf->zoom = g_key_file_get_integer(keyfile, "Home", "zoom", NULL);
+	
+	g_key_file_free(keyfile);
+	
 	set_map_home(conf);
 }
  
