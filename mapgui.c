@@ -36,8 +36,7 @@ void on_close(GtkWidget *widget, gpointer user_data) {
     gtk_main_quit();
 }
 
-G_MODULE_EXPORT void on_menuitem_prefs_activate( GtkImageMenuItem *menu,
-              GtkWidget *prefs_window ) {
+G_MODULE_EXPORT void on_menuitem_prefs_activate() {
 	APRSMap_Settings *t_prefs;
 	t_prefs = g_slice_copy(sizeof(APRSMap_Settings), conf);
 	
