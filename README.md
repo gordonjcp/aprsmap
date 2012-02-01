@@ -17,7 +17,9 @@ Ubuntu users may need to install libsoup2.4-dev due to a packaging bug.
 aprsmap uses *waf* for building. To build:
 
 
-`./waf configure`
-`./waf`
+```
+./waf configure
+./waf
+```
 
 To run: `./build/aprsmap`
