@@ -20,4 +20,6 @@ aprsmap uses waf for building. To build:
     ./waf
 
 To run:
+
     ./build/aprsmap
+
