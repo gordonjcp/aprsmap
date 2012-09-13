@@ -1,4 +1,5 @@
 aprsmap
+=======
 
 An APRS mapping application developed by Gordon JC Pearce (MM0YEQ) and
 others, with key goals of being easier to use and looking prettier
@@ -15,8 +16,8 @@ users may need to install libsoup2.4-dev due to a packaging bug.
 
 aprsmap uses waf for building. To build:
 
-./waf configure
-./waf
+    ./waf configure
+    ./waf
 
 To run:
-./build/aprsmap
+    ./build/aprsmap
