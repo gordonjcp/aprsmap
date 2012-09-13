@@ -22,6 +22,9 @@ def configure(conf):
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
     conf.check_cfg(package='gmodule-2.0', uselib_store='GMODULE', atleast_version='2.18.0', args='--cflags --libs')
     conf.check_cfg(package='gthread-2.0', uselib_store='GTHREAD', atleast_version = '2.32.1', args = '--cflags --libs')
+    # because of a packaging bug is libosmgpsmap, check for libsoup explicitly
+    conf.check_cfg(package='libsoup-2.4', atleast_version = '2.4', args = '--cflags --libs')
+    
     conf.check_cfg(package='osmgpsmap', uselib_store='OSMGPSMAP', atleast_version = '0.7.2', args = '--cflags --libs')
     conf.check_cfg(package='libfap', uselib_store='FAP', atleast_version = '1.1', args = '--cflags --libs')
     conf.check_cfg(package='sqlite3', uselib_store='SQL', atleast_version = '3', args = '--cflags --libs')
