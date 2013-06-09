@@ -18,7 +18,7 @@ def configure(conf):
 
     conf.check_cc(lib='m', uselib_store='M')
 
-    conf.env.CCFLAGS = ['-O0', '-g3']
+    conf.env.CCFLAGS = ['-O0', '-g3', '-Wall', '-Werror',]
     conf.check_cfg(package='gtk+-2.0', uselib_store='GTK', atleast_version='2.6.0', mandatory=True, args='--cflags --libs')
     conf.check_cfg(package='gmodule-2.0', uselib_store='GMODULE', atleast_version='2.18.0', args='--cflags --libs')
     conf.check_cfg(package='gthread-2.0', uselib_store='GTHREAD', atleast_version = '2.32.1', args = '--cflags --libs')

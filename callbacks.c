@@ -145,13 +145,13 @@ on_properties_ok_clicked (GtkWidget *widget, aprs_details *properties)
 	//Check Latitude/Longitude entries are correct
 	if(properties->lat > 89.9 || properties->lat < -89.9) {
 	//printf("Invalid Lat\n");
-	double homelat = oldlat; 
+	//double homelat = oldlat; 
 	//printf("New Lat:%f\n", homelat);
 	gtk_entry_set_text(latent, g_strdup_printf("%f",properties->lat));
 	}
 	if(properties->lon > 180 || properties->lon < -180) {
 	//printf("Invalid Lon\n");
-	double homelon = oldlon; 
+	//double homelon = oldlon; 
 	//printf("New Lon:%f\n", homelon);
 	gtk_entry_set_text(lonent, g_strdup_printf("%f",properties->lon));
 	}

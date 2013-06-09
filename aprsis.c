@@ -19,7 +19,6 @@
 #include "station.h"
 #include "mapviewer.h"
 
-static gboolean connected;
 static guint aprs1;
 static guint reconnect_timer;
 static GIOChannel *aprsis_io;
@@ -222,6 +221,7 @@ static gboolean aprsis_reconnect(void *ptr) {
 	aprsis_ctx *ctx = ptr;
 	printf("*** %s(): \n",__PRETTY_FUNCTION__);
 	start_aprsis(ctx);
+	return 0;
 }
 
 static gboolean

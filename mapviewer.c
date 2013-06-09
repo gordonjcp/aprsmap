@@ -133,8 +133,7 @@ main (int argc, char **argv)
     char *cachedir, *cachebasedir;
     GError *error = NULL;
     GOptionContext *context;
-	GIOChannel *gio_read;
-	 char *zErrMsg = 0;
+	char *zErrMsg = 0;
 	//create and/or open sqlite3db
 	rc = sqlite3_open("aprs.db", &db);
 	if( rc ){

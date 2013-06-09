@@ -9,6 +9,7 @@
 #include <time.h>
 #include <errno.h>
 #include "station.h"
+#include "mapviewer.h"
 
 extern GdkPixbuf *g_star_image;
 extern cairo_surface_t *g_symbol_image;
@@ -16,7 +17,7 @@ extern cairo_surface_t *g_symbol_image2;
 
 extern GHashTable *stations;
 extern OsmGpsMap *map;
-extern rc;
+extern int rc;
 extern sqlite3 *db;
 // workaround for libfap bug
 /// The magic constant.
@@ -139,13 +140,13 @@ static void aprsmap_get_label(fap_packet_t *packet, APRSMapStation *station) {
 
 	guint width=90, height=22;
 
-	gdouble xo, yo;
-	guint c;
+	//gdouble xo, yo;
+	//guint c;
 	cairo_t *cr;
 	cairo_text_extents_t extent;
 	cairo_surface_t *surface;
-	cairo_content_t content;
-	GdkPixbuf *dest;
+	//cairo_content_t content;
+	//GdkPixbuf *dest;
 
 	if (packet->symbol_table && packet->symbol_code) {
 		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
@@ -186,7 +187,7 @@ static void aprsmap_get_label(fap_packet_t *packet, APRSMapStation *station) {
 
 		// munge it into a pixbuf for OsmGpsMapImage
 		cairo_surface_flush(surface);
-		content = cairo_surface_get_content(surface);
+		//content = cairo_surface_get_content(surface);
 		if (!station->pix) station->pix = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, width, height);
 
     convert_alpha (gdk_pixbuf_get_pixels (station->pix),
@@ -201,6 +202,8 @@ static void aprsmap_get_label(fap_packet_t *packet, APRSMapStation *station) {
 	}
 }
 
+
+/*
 static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *station) {
 	// has the station moved?
 	if (!packet->latitude) return FALSE; // don't know if it's moved; nothing to tell us it has
@@ -211,7 +214,7 @@ static gboolean aprsmap_station_moved(fap_packet_t *packet, APRSMapStation *stat
 	if (*(packet->longitude) != station->lon) return TRUE;
 	return FALSE;
 }
-
+*/
 static APRSMapStation* get_station(fap_packet_t *packet) {
 	// return either a new station, or an existing one
 	char name[10];
@@ -279,7 +282,7 @@ static void position_station(APRSMapStation *station, fap_packet_t *packet) {
 	struct tm *ts;
 	ts = localtime(packet->timestamp);
 	if (ts == NULL) {
-		printf("Failed to parse timestamp %d: errno is %d\n", packet->timestamp, errno);
+		printf("Failed to parse timestamp %ldl: errno is %d\n", (long)packet->timestamp, errno);
 		return;
 	}
 	strftime(test, sizeof(test), "%a %Y-%m-%d %H:%M:%S %Z", ts);
@@ -348,7 +351,7 @@ gboolean process_packet(gchar *msg) {
 	fap_packet_type_t type;
 	APRSMapStation *station;
 	char errmsg[256];
-	char name[10];
+	//char name[10];
 
 	packet = fap_parseaprs(msg, strlen(msg), 0);
 	if (packet->error_code) {
@@ -374,17 +377,20 @@ gboolean process_packet(gchar *msg) {
 			break;
 	}
 	g_hash_table_replace(stations, station->callsign, station);
+	return 0;
 }
 void write_to_db(gdouble latitude, gdouble longitude, float course, char *call, char 
 *object, time_t *timestamp) {
 
 	char zlat[20]; char zlon[20]; char zcourse[10]; char ztime[80];
- 	int n, m, o, t,rc;
+ 	//int n, m, o, t,rc;
+ 	int rc;
+ 	/*
 	n=sprintf(zlat,"%f",latitude);   
 	m=sprintf(zlon,"%f",longitude);
 	o=sprintf(zcourse, "%f", course);
-        t=sprintf(ztime, "%u", timestamp);
-
+    t=sprintf(ztime, "%ld", (long)timestamp);
+	*/
 	char *zSQL = sqlite3_mprintf("INSERT INTO call_data (call, object, course, lon, lat, time) VALUES (%Q,%Q,%Q,%Q,%Q,%Q)",call,object,zcourse,zlon,zlat,ztime);
 	rc = sqlite3_exec(db, zSQL, 0, 0, &zErrMsg);
 	if( rc!=SQLITE_OK ){
