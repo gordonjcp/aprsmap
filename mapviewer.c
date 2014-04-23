@@ -175,15 +175,8 @@ main (int argc, char **argv)
 		FILE *log = fopen(packet_log_file, "w");
 		aprsis_set_log(ctx, log);
 	}
-	//get this in before GTK starts - maybe loads faster if after?
-	/*rc = sqlite3_exec(db, "SELECT * FROM user_data", user_callback, properties, &zErrMsg);
-  if( rc!=SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
-      sqlite3_free(zErrMsg);
-    }*/
 
 	aprsis_set_filter(properties->ctx, properties->lat,properties->lon,properties->range);
-    g_thread_init(NULL);
     gtk_init (&argc, &argv);
 
     // initialise APRS parser

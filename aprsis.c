@@ -287,7 +287,7 @@ void start_aprsis(aprsis_ctx *ctx) {
 		g_io_channel_unref (aprsis_io);
 		aprsis_io = NULL;
 	}
-	g_thread_create((GThreadFunc) start_aprsis_thread, ctx, FALSE, NULL);
+	g_thread_new("aprsis-thread",(GThreadFunc) start_aprsis_thread, ctx);
 }
 
 /* vim: set noexpandtab ai ts=4 sw=4 tw=4: */
