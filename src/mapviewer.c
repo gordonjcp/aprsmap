@@ -22,7 +22,8 @@
 #include <math.h>
 #include <glib.h>
 #include <gtk/gtk.h>
-#include <gdk/gdkkeysyms.h>
+#include <gdk/gdkkeysyms-compat.h>
+
 
 #include <fap.h>
 #include <osm-gps-map.h>
